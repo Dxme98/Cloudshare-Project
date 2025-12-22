@@ -6,7 +6,7 @@ on:
 
 env:
   AWS_REGION: eu-central-1
-  ECR_REPOSITORY: cloudshare-app
+  ECR_REPOSITORY: cloudshare-repository
   TF_WORKING_DIR: ./infra
 
 permissions:
