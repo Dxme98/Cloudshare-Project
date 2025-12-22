@@ -1,0 +1,125 @@
+resource "aws_ecs_cluster" "app_cluster" {
+  name = "app-cluster"
+}
+
+resource "aws_iam_role" "ecs_execution_role" {
+  name = "ecs-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role" "ecs_task_role" {
+  name = "ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "execution_role_attachment" {
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  role       = aws_iam_role.ecs_execution_role.name
+}
+
+resource "aws_cloudwatch_log_group" "ecs_logs" {
+  name              = "/ecs/cloudshare"
+  retention_in_days = 3 # Spart Kosten: Logs werden nach 7 Tagen gelöscht
+}
+
+resource "aws_ecs_task_definition" "cloudshare_task" {
+  family                   = "cloudshare-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = 512
+  memory                   = 1024
+
+  execution_role_arn = aws_iam_role.ecs_execution_role.arn
+  task_role_arn      = aws_iam_role.ecs_task_role.arn
+
+  container_definitions = jsonencode([
+    {
+      name      = "cloudshare-task"
+      image     = "${aws_ecr_repository.cloudshare_repository.repository_url}:${var.image_tag}" # Dynamische ECR URL
+      essential = true
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = aws_cloudwatch_log_group.ecs_logs.name
+          "awslogs-region"        = "eu-central-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
+
+      portMappings = [
+        {
+          containerPort = 8080
+          hostPort      = 8080
+          protocol      = "tcp"
+        }
+      ]
+      environment = [
+        {
+          name  = "JAVA_TOOL_OPTIONS"
+          value = "-XX:MaxRAMPercentage=75.0"
+        }
+      ]
+    }
+
+  ])
+}
+
+
+resource "aws_ecs_service" "cloudshare_service" {
+  name            = "cloudshare-service"
+  cluster         = aws_ecs_cluster.app_cluster.id
+  task_definition = aws_ecs_task_definition.cloudshare_task.id
+  launch_type     = "FARGATE"
+
+  desired_count = 2
+ // enable_execute_command = var.enable_debugging   Enabled exec (SSM Session Manager)
+
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.cloudshare_tg.arn
+    container_name   = "cloudshare-task"
+    container_port   = 8080
+  }
+
+  network_configuration {
+    security_groups  = [aws_security_group.app_sg.id]
+    subnets          = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
+    assign_public_ip = false
+  }
+
+
+
+  # Der Lebensretter für Java-Apps:
+  # "Wenn ein neuer Task startet, erlaube ihm 120 Sekunden Zeit zum Booten.
+  # Erst danach darf der ALB ihn als 'Unhealthy' markieren."
+  health_check_grace_period_seconds = 120
+  force_delete                      = true // development
+  depends_on                        = [aws_lb_listener.http, aws_iam_role_policy_attachment.execution_role_attachment]
+}
