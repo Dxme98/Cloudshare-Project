@@ -148,7 +148,7 @@ resource "aws_ecs_service" "cloudshare_service" {
   task_definition = aws_ecs_task_definition.cloudshare_task.id
   launch_type     = "FARGATE"
 
-  desired_count = 2
+  desired_count = 1
  // enable_execute_command = var.enable_debugging   Enabled exec (SSM Session Manager)
 
 
