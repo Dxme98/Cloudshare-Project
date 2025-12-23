@@ -17,3 +17,18 @@ resource "aws_s3_bucket_public_access_block" "allow_public" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+resource "aws_dynamodb_table" "file_metadata" {
+  name           = "CloudShare-Metadata"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "fileId"
+
+  attribute {
+    name = "fileId"
+    type = "S"
+  }
+
+  tags = {
+    Project = "CloudShare"
+  }
+}
