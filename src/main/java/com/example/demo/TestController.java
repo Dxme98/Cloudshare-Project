@@ -8,6 +8,6 @@ public class TestController {
 
     @GetMapping("/hello")
     public String sayHello() {
-        return "Hello from Spring Boot Backend! Updated";
+        return "Hello from Spring Boot Backend! Updated 2.0";
     }
 }
