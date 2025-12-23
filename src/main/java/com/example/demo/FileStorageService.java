@@ -11,6 +11,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -76,5 +77,11 @@ public class FileStorageService {
 
         // 2. Die Resource von S3 holen (noch kein Download, nur die Verbindung)
         return s3Template.download(bucketName, metadata.getS3Key());
+    }
+
+    public List<FileMetadata> getAllFiles() {
+        log.info("Lese alle Datei-Metadaten aus DynamoDB");
+        // scanAll liest jedes Item in der Map/Tabelle
+        return dynamoDbTemplate.scanAll(FileMetadata.class).items().stream().toList();
     }
 }

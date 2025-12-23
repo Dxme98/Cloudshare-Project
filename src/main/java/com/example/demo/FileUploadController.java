@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/files")
@@ -19,6 +20,11 @@ public class FileUploadController {
 
     public FileUploadController(FileStorageService fileStorageService) {
         this.fileStorageService = fileStorageService;
+    }
+
+    @GetMapping
+    public List<FileMetadata> listAllFiles() {
+        return fileStorageService.getAllFiles();
     }
 
     @PostMapping("/upload")
