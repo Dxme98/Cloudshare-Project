@@ -52,8 +52,35 @@ resource "aws_iam_policy" "s3_access" {
   })
 }
 
+resource "aws_iam_policy" "dynamodb_access" {
+  name        = "CloudShareDynamoDBAccess"
+  description = "Erlaubt dem ECS Task Zugriff auf die Metadaten-Tabelle"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = aws_dynamodb_table.file_metadata.arn
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "attach_s3" {
   policy_arn = aws_iam_policy.s3_access.arn
+  role = aws_iam_role.ecs_task_role.name
+}
+
+resource "aws_iam_role_policy_attachment" "attach_dynamodb" {
+  policy_arn = aws_iam_policy.dynamodb_access.arn
   role = aws_iam_role.ecs_task_role.name
 }
 
