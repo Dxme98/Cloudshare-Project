@@ -1,11 +1,13 @@
 package com.example.demo;
 
 import io.awspring.cloud.dynamodb.DynamoDbTemplate;
+import io.awspring.cloud.s3.S3Resource;
 import io.awspring.cloud.s3.S3Template;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.enhanced.dynamodb.Key;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -57,5 +59,22 @@ public class FileStorageService {
             log.error("Unerwarteter Cloud-Fehler bei ID {}: {}", fileId, e.getMessage());
             throw e;
         }
+    }
+
+    public S3Resource getFileResource(String fileId) {
+        // 1. In der Map (DynamoDB) nachschauen, wo das Paket liegt
+        FileMetadata metadata = dynamoDbTemplate.load(
+                Key.builder().partitionValue(fileId).build(),
+                FileMetadata.class
+        );
+
+        if (metadata == null) {
+            throw new RuntimeException("Datei nicht gefunden!");
+        }
+
+        log.info("Lade Datei {} von S3 Pfad: {}", metadata.getFileName(), metadata.getS3Key());
+
+        // 2. Die Resource von S3 holen (noch kein Download, nur die Verbindung)
+        return s3Template.download(bucketName, metadata.getS3Key());
     }
 }
