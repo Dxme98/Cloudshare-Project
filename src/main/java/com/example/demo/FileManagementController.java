@@ -1,6 +1,7 @@
 package com.example.demo;
 
 import io.awspring.cloud.s3.S3Resource;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -10,34 +11,39 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.InputStream;
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/files")
-public class FileUploadController {
-
+@RequestMapping("/api")
+@RequiredArgsConstructor
+public class FileManagementController {
     private final FileStorageService fileStorageService;
 
-    public FileUploadController(FileStorageService fileStorageService) {
-        this.fileStorageService = fileStorageService;
+    @PostMapping("/folders")
+    public ResponseEntity<FolderResponse> initializeFolder() {
+        FolderResponse folderResponse = fileStorageService.initializeFolder();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(folderResponse);
     }
 
-    @GetMapping
-    public List<FileMetadata> listAllFiles() {
-        return fileStorageService.getAllFiles();
+    @GetMapping("/folders/{folderId}")
+    public ResponseEntity<FolderResponse> openFolder(
+            @PathVariable String folderId,
+            @RequestParam String token) {
+
+        FolderResponse folderResponse = fileStorageService.openFolder(token, folderId);
+        return ResponseEntity.ok(folderResponse);
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file){
-        String fileId =  fileStorageService.uploadFile(file);
-
+    @PostMapping("/folders/{folderId}")
+    public ResponseEntity<String> uploadFile(@PathVariable String folderId, @RequestParam String token, @RequestParam("file") MultipartFile file) {
+        String fileId =  fileStorageService.uploadFile(folderId, token, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
     }
 
     @GetMapping("/{fileId}/download")
-    public ResponseEntity<StreamingResponseBody> download(@PathVariable String fileId) {
+    public ResponseEntity<StreamingResponseBody> download(@PathVariable String fileId, @RequestParam String token) {
         // Resource vom Service holen
-        S3Resource resource = fileStorageService.getFileResource(fileId);
+        S3Resource resource = fileStorageService.getFileResource(fileId, token);
 
         // Den ursprünglichen Dateinamen mitschicken
         String filename = resource.getFilename();
