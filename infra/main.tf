@@ -28,6 +28,17 @@ resource "aws_dynamodb_table" "file_metadata" {
     type = "S"
   }
 
+  attribute {
+    name = "folderId"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name               = "FolderIndex" # Name, den wir im Java-Code nutzen
+    hash_key           = "folderId"
+    projection_type    = "ALL" # Kopiert alle Attribute in den Index für schnellen Zugriff
+  }
+
   tags = {
     Project = "CloudShare"
   }
