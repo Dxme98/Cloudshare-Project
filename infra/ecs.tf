@@ -68,7 +68,7 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:Query",
           "dynamodb:Scan"
         ]
-        Resource = aws_dynamodb_table.file_metadata.arn
+        Resource = [aws_dynamodb_table.file_metadata.arn, aws_dynamodb_table.folder.arn]
       }
     ]
   })

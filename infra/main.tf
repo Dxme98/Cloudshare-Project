@@ -43,3 +43,19 @@ resource "aws_dynamodb_table" "file_metadata" {
     Project = "CloudShare"
   }
 }
+
+
+resource "aws_dynamodb_table" "folder" {
+  name           = "Folder"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "folderId"
+
+  attribute {
+    name = "folderId"
+    type = "S"
+  }
+
+  tags = {
+    Project = "CloudShare"
+  }
+}
