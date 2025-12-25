@@ -140,6 +140,38 @@ public class FileStorageService {
         return FolderMapper.toResponse(folder, token, files);
     }
 
+    public void deleteFile(String fileId, String token) {
+        // 1. Metadaten laden
+        FileMetadata metadata = getFileMetadata(fileId);
+
+        // 2. Validierung (Owner des Folders?)
+        validateOwnerRole(token, metadata.getFolderId());
+
+        // 3. Ausgelagerte Lösch-Logik aufrufen
+        performFileCleanup(metadata);
+
+        log.info("Einzelne Datei {} erfolgreich gelöscht.", fileId);
+    }
+
+    public void deleteFolder(String folderId, String token) {
+        // 1. Validierung
+        validateOwnerRole(token, folderId);
+
+        log.info("Batch-Löschung für Ordner {} gestartet.", folderId);
+
+        // 2. Alle Dateien sammeln
+        List<FileMetadata> filesToDelete = fetchFilesForFolder(folderId);
+
+        // 3. Jede Datei einzeln über die Hilfsmethode löschen
+        filesToDelete.forEach(this::performFileCleanup);
+
+        // 4. Den Ordner selbst entfernen
+        Folder folder = findFolder(folderId);
+        dynamoDbTemplate.delete(folder);
+
+        log.info("Ordner {} inklusive {} Dateien vollständig gelöscht.", folderId, filesToDelete.size());
+    }
+
     private List<FileMetadata> fetchFilesForFolder(String folderId) {
         // Wir nutzen den Query-Befehl auf dem GSI der Metadata-Tabelle
         return dynamoDbTemplate.query(
@@ -171,6 +203,31 @@ public class FileStorageService {
         if (folder == null) throw new FolderNotFoundException(folderId);
 
         return folder;
+    }
+
+    private void performFileCleanup(FileMetadata metadata) {
+        try {
+            // Zuerst S3 (verhindert Kosten für verwaiste Daten)
+            s3Template.deleteObject(bucketName, metadata.getS3Key());
+
+            // Dann DynamoDB
+            dynamoDbTemplate.delete(metadata);
+
+            log.debug("Cleanup erfolgreich für S3-Key: {}", metadata.getS3Key());
+        } catch (Exception e) {
+            log.error("Cleanup fehlgeschlagen für Datei {}: {}", metadata.getFileId(), e.getMessage());
+            // Wir werfen hier keine Exception, damit deleteFolder bei einer
+            // einzelnen defekten Datei nicht komplett abbricht.
+        }
+    }
+
+    private FileMetadata getFileMetadata(String fileId) {
+        FileMetadata metadata = dynamoDbTemplate.load(
+                Key.builder().partitionValue(fileId).build(),
+                FileMetadata.class
+        );
+        if (metadata == null) throw new RuntimeException("Datei nicht gefunden.");
+        return metadata;
     }
 
 }

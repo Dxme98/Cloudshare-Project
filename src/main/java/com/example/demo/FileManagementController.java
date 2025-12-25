@@ -59,4 +59,16 @@ public class FileManagementController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(responseBody);
     }
+
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<Void> deleteFile(@PathVariable String fileId, @RequestParam String token) {
+        fileStorageService.deleteFile(fileId, token);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/folders/{folderId}")
+    public ResponseEntity<Void> deleteFolder(@PathVariable String folderId, @RequestParam String token) {
+        fileStorageService.deleteFolder(folderId, token);
+        return ResponseEntity.noContent().build();
+    }
 }

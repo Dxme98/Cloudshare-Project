@@ -46,7 +46,7 @@ resource "aws_dynamodb_table" "file_metadata" {
 
 
 resource "aws_dynamodb_table" "folder" {
-  name           = "Folder"
+  name           = "folder"
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "folderId"
 
