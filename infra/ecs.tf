@@ -45,7 +45,7 @@ resource "aws_iam_policy" "s3_access" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket"]
+        Action   = ["s3:PutObject", "s3:GetObject", "s3:ListBucket", "s3:DeleteObject"]
         Resource = ["${aws_s3_bucket.uploads.arn}/uploads/*", aws_s3_bucket.uploads.arn]
       }
     ]
@@ -65,6 +65,7 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:PutItem",
           "dynamodb:GetItem",
           "dynamodb:UpdateItem",
+          "dynamodb:DeleteItem",
           "dynamodb:Query",
           "dynamodb:Scan"
         ]
