@@ -15,6 +15,7 @@ public class Folder {
     private String folderName;
     private String ownerToken;
     private String shareToken;
+    private Long ttl;
 
 
     @DynamoDbPartitionKey

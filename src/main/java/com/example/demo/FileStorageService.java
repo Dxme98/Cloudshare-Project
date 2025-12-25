@@ -16,6 +16,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -101,11 +102,13 @@ public class FileStorageService {
         String folderId = UUID.randomUUID().toString();
         log.info("Starting initialization for new folder with ID: {}", folderId);
 
+        long expirationTime = Instant.now().plus(24, ChronoUnit.HOURS).getEpochSecond();
         try {
             Folder folder = Folder.builder()
                     .folderId(folderId)
                     .ownerToken(UUID.randomUUID().toString())
                     .shareToken(UUID.randomUUID().toString())
+                    .ttl(expirationTime)
                     .folderName("New Folder") // Kleiner UX-Vorteil statt leerem String
                     .build();
 
