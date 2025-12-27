@@ -98,7 +98,7 @@ public class FileStorageService {
         return s3Template.download(bucketName, metadata.getS3Key());
     }
 
-    public FolderResponse initializeFolder() {
+    public FolderInitResponse initializeFolder() {
         String folderId = UUID.randomUUID().toString();
         log.info("Starting initialization for new folder with ID: {}", folderId);
 
@@ -117,7 +117,7 @@ public class FileStorageService {
             log.info("Successfully saved folder {} to DynamoDB. OwnerToken generated.", folderId);
 
             // Da wir gerade initialisieren, ist der User definitiv der Owner
-            return FolderMapper.toResponse(folder, folder.getOwnerToken(), null);
+            return FolderMapper.toInitResponse(folder);
 
         } catch (Exception e) {
             log.error("Failed to initialize folder in DynamoDB: {}", e.getMessage(), e);

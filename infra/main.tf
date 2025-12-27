@@ -168,4 +168,12 @@ resource "aws_lambda_event_source_mapping" "trigger" {
   event_source_arn  = aws_dynamodb_table.folder.stream_arn
   function_name     = aws_lambda_function.cleanup_lambda.arn
   starting_position = "LATEST"
+
+  filter_criteria {
+    filter {
+      pattern = jsonencode({
+        eventName = ["REMOVE"]
+      })
+    }
+  }
 }

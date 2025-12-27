@@ -5,11 +5,21 @@ import java.util.List;
 
 public class FolderMapper {
 
+    public static FolderInitResponse toInitResponse(Folder folder) {
+        if (folder == null) return null;
+
+        FolderInitResponse response = new FolderInitResponse();
+        response.setFolderId(folder.getFolderId());
+        response.setOwnerToken(folder.getOwnerToken());
+        response.setShareToken(folder.getShareToken());
+
+        return response;
+    }
+
 
     public static FolderResponse toResponse(Folder folder, String inputToken, List<FileMetadata> fileMetadataList) {
-        if (folder == null) {
-            return null;
-        }
+        if (folder == null) return null;
+
 
         FolderResponse response = new FolderResponse();
         response.setFolderId(folder.getFolderId());
@@ -20,9 +30,6 @@ public class FolderMapper {
         } else {
             response.setFileMetadataList(fileMetadataList);
         }
-
-        response.setOwnerToken(folder.getOwnerToken());
-        response.setShareToken(folder.getShareToken());
 
         response.setOwner(inputToken != null && inputToken.equals(folder.getOwnerToken()));
 
