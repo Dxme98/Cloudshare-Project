@@ -16,6 +16,7 @@ import java.io.InputStream;
 @RestController
 @RequestMapping("/api/folders")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class FileManagementController {
 
     private final FileStorageService fileStorageService;

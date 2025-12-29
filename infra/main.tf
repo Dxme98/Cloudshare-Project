@@ -94,7 +94,7 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
         # Erlaubt das Löschen der physischen Dateien in S3
         Effect   = "Allow"
         Action   = ["s3:DeleteObject"]
-        Resource = ["${aws_s3_bucket.uploads.arn}/uploads/*"]
+        Resource = ["${aws_s3_bucket.uploads.arn}/uploads/*" ]
       },
       {
         # Erlaubt das Finden und Löschen der Metadaten
