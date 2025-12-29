@@ -11,6 +11,7 @@ import java.util.List;
 public class FolderResponse {
     private String folderId;
     private String folderName;
+    @JsonProperty("isOwner")
     private boolean isOwner = false;
     private String type = "temporary";
 
