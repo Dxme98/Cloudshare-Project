@@ -33,6 +33,8 @@ public class FolderMapper {
 
         response.setOwner(inputToken != null && inputToken.equals(folder.getOwnerToken()));
 
+        if(response.isOwner()) response.setShareToken(folder.getShareToken());
+
         return response;
     }
 }

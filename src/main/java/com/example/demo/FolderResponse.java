@@ -14,6 +14,7 @@ public class FolderResponse {
     @JsonProperty("isOwner")
     private boolean isOwner = false;
     private String type = "temporary";
+    private String shareToken;
 
     @JsonProperty("files")
     private List<FileMetadata> fileMetadataList;
