@@ -29,4 +29,14 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(StorageLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleStorageLimitExceeded(StorageLimitExceededException ex) {
+        ErrorResponse error = new ErrorResponse(
+                "STORAGE_LIMIT_EXCEEDED",
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
 }

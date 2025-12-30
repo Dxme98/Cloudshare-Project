@@ -2,13 +2,16 @@ package com.example.demo;
 
 import com.example.demo.exceptions.FolderNotFoundException;
 import com.example.demo.exceptions.InvalidTokenException;
+import com.example.demo.exceptions.StorageLimitExceededException;
 import io.awspring.cloud.dynamodb.DynamoDbTemplate;
 import io.awspring.cloud.s3.S3Resource;
 import io.awspring.cloud.s3.S3Template;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
@@ -28,6 +31,7 @@ public class FileStorageService {
     private final S3Template s3Template;
     private final String bucketName;
     private final DynamoDbTemplate dynamoDbTemplate;
+    private static final long MAX_FOLDER_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
 
 
     public FileStorageService(S3Template s3Template, @Value("${S3_UPLOAD_BUCKET_NAME}") String bucketName, DynamoDbTemplate dynamoDbTemplate ) {
@@ -39,6 +43,23 @@ public class FileStorageService {
     public String uploadFile(String folderId, String token, MultipartFile file) {
         // 1. Sicherheit zuerst: Validierung des Owners
         validateOwnerRole(token, folderId);
+
+
+
+        // Alle Dateien des Ordners über den GSI "FolderIndex" laden
+        List<FileMetadata> fileMetaData = fetchFilesForFolder(folderId);
+
+        long currentUsedSpace = 0;
+        currentUsedSpace = fileMetaData.stream()
+                    .mapToLong(FileMetadata::getFileSize)
+                    .sum();
+
+        long currentFileSize = file.getSize();
+
+        if(currentUsedSpace +  currentFileSize > MAX_FOLDER_SIZE_BYTES) {
+            throw new StorageLimitExceededException(currentUsedSpace, MAX_FOLDER_SIZE_BYTES);
+        }
+
 
         String fileId = UUID.randomUUID().toString();
 
