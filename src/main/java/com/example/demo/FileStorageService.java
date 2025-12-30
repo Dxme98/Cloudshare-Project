@@ -45,7 +45,6 @@ public class FileStorageService {
         validateOwnerRole(token, folderId);
 
 
-
         // Alle Dateien des Ordners über den GSI "FolderIndex" laden
         List<FileMetadata> fileMetaData = fetchFilesForFolder(folderId);
 
