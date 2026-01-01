@@ -29,7 +29,7 @@ public class DashboardController {
     }
 
     /**
-     * Erstellt einen neuen PERMANENTEN Ordner.
+     * Erstellt einen neuen PERMANENTEN Ordner
      */
     @PostMapping("/folders")
     public ResponseEntity<FolderInitResponse> createPermanentFolder(
