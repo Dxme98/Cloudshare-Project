@@ -27,7 +27,7 @@ public class SecurityConfig {
                 // 3. Regeln definieren
                 .authorizeHttpRequests(auth -> auth
                         // A) Die öffentlichen Endpoints (Anonymer Flow)
-                        .requestMatchers("/api/folders/**", "/api/files/**").permitAll()
+                        .requestMatchers("/api/folders/**", "/api/files/**", "/hello").permitAll()
 
                         // B) Der neue geschützte Bereich (kommt gleich)
                         .requestMatchers("/api/dashboard/**").authenticated()
