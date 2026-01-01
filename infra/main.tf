@@ -55,6 +55,11 @@ resource "aws_dynamodb_table" "folder" {
     type = "S"
   }
 
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
   ttl {
     attribute_name = "ttl"
     enabled        = true
@@ -62,6 +67,13 @@ resource "aws_dynamodb_table" "folder" {
 
   stream_enabled   = true
   stream_view_type = "OLD_IMAGE"
+
+
+  global_secondary_index {
+    name               = "UserIndex" # Name, den wir im Java-Code nutzen
+    hash_key           = "userId"
+    projection_type    = "ALL" # Kopiert alle Attribute in den Index für schnellen Zugriff
+  }
 
   tags = {
     Project = "CloudShare"
