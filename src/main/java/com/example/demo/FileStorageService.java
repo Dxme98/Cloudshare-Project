@@ -253,4 +253,39 @@ public class FileStorageService {
         return metadata;
     }
 
+    /**
+     * Erstellt einen PERMANENTEN Ordner für einen eingeloggten User.
+     */
+    public FolderInitResponse createPermanentFolder(String userId, String folderName) {
+        String folderId = UUID.randomUUID().toString();
+
+        Folder folder = Folder.builder()
+                .folderId(folderId)
+                .ownerToken(UUID.randomUUID().toString()) // Brauchen wir weiterhin für Share-Links
+                .shareToken(UUID.randomUUID().toString())
+                .folderName(folderName != null ? folderName : "New Project")
+                .type(FolderType.PERMANENT)
+                .userId(userId) // <--- Verknüpfung zum Cognito User
+                .ttl(null)      // <--- WICHTIG: Kein TTL, wird nie gelöscht
+                .build();
+
+        dynamoDbTemplate.save(folder);
+        log.info("Permanent folder created: {} for user: {}", folderId, userId);
+
+        return FolderMapper.toInitResponse(folder);
+    }
+
+    /**
+     * Dashboard: Holt alle Ordner eines Users über den GSI.
+     */
+    public List<Folder> getFoldersByUser(String userId) {
+        return dynamoDbTemplate.query(
+                QueryEnhancedRequest.builder()
+                        .queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(userId)))
+                        .build(),
+                Folder.class,
+                "UserIndex").items().stream().toList();
+
+    }
+
 }

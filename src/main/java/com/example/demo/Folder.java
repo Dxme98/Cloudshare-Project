@@ -3,6 +3,7 @@ package com.example.demo;
 import lombok.*;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 @DynamoDbBean
 @Getter
@@ -16,6 +17,10 @@ public class Folder {
     private String ownerToken;
     private String shareToken;
     private Long ttl;
+
+    private FolderType type;
+    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "UserIndex")})
+    private String userId;
 
 
     @DynamoDbPartitionKey
