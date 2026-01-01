@@ -167,3 +167,13 @@ resource "aws_vpc_endpoint" "logs" {
   subnet_ids         = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
   security_group_ids = [aws_security_group.endpoints_sg.id]
 }
+
+resource "aws_vpc_endpoint" "cognito_idp" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.eu-central-1.cognito-idp"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids          = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_b.id]
+  security_group_ids  = [aws_security_group.endpoints_sg.id]
+}
