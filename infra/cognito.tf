@@ -40,7 +40,7 @@ resource "aws_cognito_user_pool_client" "client" {
 
 # 3. Outputs (Diese IDs brauchen wir gleich für React und Spring Boot)
 output "cognito_user_pool_id" {
-  value = aws_cognito_user_pool.main.id
+  value = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
 }
 
 output "cognito_client_id" {

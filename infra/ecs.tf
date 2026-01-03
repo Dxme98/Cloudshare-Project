@@ -136,6 +136,10 @@ resource "aws_ecs_task_definition" "cloudshare_task" {
         {
           name = "S3_UPLOAD_BUCKET_NAME",
           value = aws_s3_bucket.uploads.id
+        },
+        {
+          name = "COGNITO_ISSUER_URI",
+          value = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
         }
       ]
     }
