@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.FolderResponse;
+import com.example.demo.model.FolderSummaryDTO;
 import com.example.demo.service.DashboardService;
 import com.example.demo.model.Folder;
 import com.example.demo.model.FolderInitResponse;
@@ -31,10 +32,10 @@ public class DashboardController {
      * Die User-ID kommt sicher aus dem Token (kann nicht gefälscht werden).
      */
     @GetMapping("/folders")
-    public ResponseEntity<List<Folder>> getMyFolders(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<FolderSummaryDTO>> getMyFolders(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getClaimAsString("sub");
 
-        List<Folder> folders = dashboardService.getMyFolders(userId);
+        List<FolderSummaryDTO> folders = dashboardService.getMyFolders(userId);
         return ResponseEntity.ok(folders);
     }
 

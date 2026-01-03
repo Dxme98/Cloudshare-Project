@@ -13,6 +13,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,6 +40,7 @@ public class DashboardService {
                 .userId(userId)
                 .shareToken(UUID.randomUUID().toString())
                 .ownerToken(UUID.randomUUID().toString())
+                .createdAt(Instant.now().toString())
                 .ttl(null) // Nie löschen
                 .build();
 
@@ -46,14 +48,26 @@ public class DashboardService {
         return FolderMapper.toInitResponse(folder);
     }
 
-    public List<Folder> getMyFolders(String userId) {
-        return dynamoDbTemplate.query(
+    public List<FolderSummaryDTO> getMyFolders(String userId) {
+        List<Folder> folders =  dynamoDbTemplate.query(
                 QueryEnhancedRequest.builder()
                         .queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(userId)))
                         .build(),
                 Folder.class,
                 "UserIndex"
         ).items().stream().toList();
+
+        return folders.stream().map(folder -> {
+            // Hier berechnen wir die Anzahl der Dateien pro Ordner, can be more efficient
+            long count = storageCore.fetchFilesForFolder(folder.getFolderId()).size();
+
+            return FolderSummaryDTO.builder()
+                    .id(folder.getFolderId())
+                    .name(folder.getFolderName())
+                    .createdAt(folder.getCreatedAt())
+                    .fileCount(count)
+                    .build();
+        }).toList();
     }
 
     /**

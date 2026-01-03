@@ -17,6 +17,7 @@ public class Folder {
     private String ownerToken;
     private String shareToken;
     private Long ttl;
+    private String createdAt;
 
     private FolderType type;
     @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "UserIndex")})
