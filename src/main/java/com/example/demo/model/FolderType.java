@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.model;
 
 public enum FolderType {
     TEMPORARY, // Löscht sich nach 24h

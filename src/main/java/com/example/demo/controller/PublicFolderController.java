@@ -1,5 +1,8 @@
-package com.example.demo;
+package com.example.demo.controller;
 
+import com.example.demo.model.FolderInitResponse;
+import com.example.demo.model.FolderResponse;
+import com.example.demo.service.PublicShareService;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -17,16 +20,16 @@ import java.io.InputStream;
 @RequestMapping("/api/folders")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-public class FileManagementController {
+public class PublicFolderController {
 
-    private final FileStorageService fileStorageService;
+    private final PublicShareService publicShareService;
 
     /**
      * Erstellt einen neuen anonymen Ordner und gibt FolderId + Token zurück.
      */
     @PostMapping
     public ResponseEntity<FolderInitResponse> initializeFolder() {
-        FolderInitResponse folderResponse = fileStorageService.initializeFolder();
+        FolderInitResponse folderResponse = publicShareService.initializeFolder();
         return ResponseEntity.status(HttpStatus.CREATED).body(folderResponse);
     }
 
@@ -38,20 +41,8 @@ public class FileManagementController {
             @PathVariable String folderId,
             @RequestParam String token) {
 
-        FolderResponse folderResponse = fileStorageService.openFolder(token, folderId);
+        FolderResponse folderResponse = publicShareService.openFolder(token, folderId);
         return ResponseEntity.ok(folderResponse);
-    }
-
-    /**
-     * Löscht einen kompletten Ordner manuell.
-     */
-    @DeleteMapping("/{folderId}")
-    public ResponseEntity<Void> deleteFolder(
-            @PathVariable String folderId,
-            @RequestParam String token) {
-
-        fileStorageService.deleteFolder(folderId, token);
-        return ResponseEntity.noContent().build();
     }
 
 
@@ -64,7 +55,7 @@ public class FileManagementController {
             @RequestParam String token,
             @RequestParam("file") MultipartFile file) {
 
-        String fileId = fileStorageService.uploadFile(folderId, token, file);
+        String fileId = publicShareService.uploadFileWithToken(folderId, token, file);
         return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
     }
 
@@ -79,7 +70,7 @@ public class FileManagementController {
             @RequestParam String token) throws IOException {
 
         // Resource vom Service holen (enthält S3-Stream und Metadaten)
-        S3Resource resource = fileStorageService.getFileResource(fileId, token);
+        S3Resource resource = publicShareService.downloadFile(folderId, fileId, token);
 
         String filename = resource.getFilename();
         long contentLength = resource.contentLength(); // Wichtig für den Browser-Fortschrittsbalken
@@ -106,7 +97,7 @@ public class FileManagementController {
             @PathVariable String fileId,
             @RequestParam String token) {
 
-        fileStorageService.deleteFile(fileId, token);
+        publicShareService.deleteFileWithToken(folderId, fileId, token);
         return ResponseEntity.noContent().build();
     }
 }
