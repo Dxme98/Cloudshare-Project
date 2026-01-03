@@ -26,8 +26,7 @@ resource "aws_lb_target_group" "cloudshare_tg" {
   target_type = "ip"
 
   health_check {
-    path = "/hello" # Spring Boot Default
-    // path                = "/actuator/health"   ACTUATOR VERWENDEN
+    path                = "/actuator/health"
     matcher             = "200" # Nur HTTP 200 ist gesund
     interval            = 30    # Alle 30 Sekunden prüfen
     timeout             = 10
