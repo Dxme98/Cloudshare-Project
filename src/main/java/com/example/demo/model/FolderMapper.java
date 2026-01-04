@@ -24,6 +24,7 @@ public class FolderMapper {
         FolderResponse response = new FolderResponse();
         response.setFolderId(folder.getFolderId());
         response.setFolderName(folder.getFolderName());
+        response.setType(folder.getType().toString().toLowerCase());
 
         if (fileMetadataList == null) {
             response.setFileMetadataList(new ArrayList<>());

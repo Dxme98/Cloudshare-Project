@@ -13,7 +13,7 @@ public class FolderResponse {
     private String folderName;
     @JsonProperty("isOwner")
     private boolean isOwner = false;
-    private String type = "temporary";
+    private String type;
     private String shareToken;
 
     @JsonProperty("files")
