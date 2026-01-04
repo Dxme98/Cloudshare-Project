@@ -3,7 +3,6 @@ package com.example.demo.controller;
 import com.example.demo.model.FolderResponse;
 import com.example.demo.model.FolderSummaryDTO;
 import com.example.demo.service.DashboardService;
-import com.example.demo.model.Folder;
 import com.example.demo.model.FolderInitResponse;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,7 @@ import java.io.InputStream;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/dashboard")
+@RequestMapping("/api/dashboard/folders")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class DashboardController {
@@ -31,7 +30,7 @@ public class DashboardController {
      * Listet alle Ordner des eingeloggten Users.
      * Die User-ID kommt sicher aus dem Token (kann nicht gefälscht werden).
      */
-    @GetMapping("/folders")
+    @GetMapping
     public ResponseEntity<List<FolderSummaryDTO>> getMyFolders(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getClaimAsString("sub");
 
@@ -53,7 +52,7 @@ public class DashboardController {
     /**
      * Erstellt einen neuen PERMANENTEN Ordner.
      */
-    @PostMapping("/folders")
+    @PostMapping
     public ResponseEntity<FolderInitResponse> createPermanentFolder(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "My Project") String name) {
@@ -136,6 +135,4 @@ public class DashboardController {
 
         return ResponseEntity.noContent().build();
     }
-
-
 }
