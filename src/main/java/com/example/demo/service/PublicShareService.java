@@ -2,13 +2,13 @@ package com.example.demo.service;
 
 import com.example.demo.exceptions.*;
 import com.example.demo.model.*;
+import com.example.demo.repository.FolderRepository;
 import io.awspring.cloud.dynamodb.DynamoDbTemplate;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -22,7 +22,7 @@ import java.util.UUID;
 public class PublicShareService {
 
     private final StorageCoreService storageCore;
-    private final DynamoDbTemplate dynamoDbTemplate;
+    private final FolderRepository folderRepository;
 
     private static final long MAX_FOLDER_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB Limit
 
@@ -41,12 +41,12 @@ public class PublicShareService {
                 .type(FolderType.TEMPORARY)
                 .build();
 
-        dynamoDbTemplate.save(folder);
+        folderRepository.save(folder);
         return FolderMapper.toInitResponse(folder);
     }
 
     public FolderResponse openFolder(String token, String folderId) {
-        Folder folder = findFolder(folderId);
+        Folder folder = folderRepository.findById(folderId);
         validateToken(folder, token); // Check: Owner oder Share Token
 
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
@@ -56,7 +56,7 @@ public class PublicShareService {
     // --- FILE OPERATIONS ---
 
     public String uploadFileWithToken(String folderId, String token, MultipartFile file) {
-        Folder folder = findFolder(folderId);
+        Folder folder = folderRepository.findById(folderId);
         validateOwnerToken(folder, token); // Nur Owner darf uploaden
 
         // Quota Check
@@ -69,7 +69,7 @@ public class PublicShareService {
     }
 
     public S3Resource downloadFile(String folderId, String fileId, String token) {
-        Folder folder = findFolder(folderId);
+        Folder folder = folderRepository.findById(folderId);
         validateToken(folder, token); // Jeder mit Token darf laden
 
         // Prüfen ob File wirklich zum Folder gehört (Sicherheit!)
@@ -82,7 +82,7 @@ public class PublicShareService {
     }
 
     public void deleteFileWithToken(String folderId, String fileId, String token) {
-        Folder folder = findFolder(folderId);
+        Folder folder = folderRepository.findById(folderId);
         validateOwnerToken(folder, token); // Nur Owner darf Files löschen
 
         FileMetadata metadata = storageCore.getFileMetadata(fileId);
@@ -92,12 +92,6 @@ public class PublicShareService {
     }
 
     // --- PRIVATE HELPERS ---
-
-    private Folder findFolder(String folderId) {
-        Folder f = dynamoDbTemplate.load(Key.builder().partitionValue(folderId).build(), Folder.class);
-        if (f == null) throw new FolderNotFoundException(folderId);
-        return f;
-    }
 
     private void validateToken(Folder folder, String token) {
         if (!Objects.equals(folder.getOwnerToken(), token) &&

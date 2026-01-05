@@ -1,0 +1,49 @@
+package com.example.demo.model;
+
+import lombok.*;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
+
+@DynamoDbBean
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Setter
+public class FolderShare {
+
+    private String userId;
+    private String folderId;
+    private Role role;
+    private String ownerId;
+    private String folderName;
+
+
+    @DynamoDbPartitionKey
+    @DynamoDbAttribute("userId")
+    @DynamoDbSecondarySortKey(indexNames = "gsi_folder_lookup")
+    public String getUserId() {
+        return userId;
+    }
+
+    @DynamoDbSortKey
+    @DynamoDbAttribute("folderId")
+    @DynamoDbSecondaryPartitionKey(indexNames = "gsi_folder_lookup")
+    public String getFolderId() {
+        return folderId;
+    }
+
+
+    @DynamoDbAttribute("role")
+    public Role getRole() {
+        return role;
+    }
+
+    @DynamoDbAttribute("ownerId")
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    @DynamoDbAttribute("folderName")
+    public String getFolderName() {
+        return folderName;
+    }
+}

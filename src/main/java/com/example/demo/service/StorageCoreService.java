@@ -1,16 +1,13 @@
 package com.example.demo.service;
 
 import com.example.demo.model.FileMetadata;
-import io.awspring.cloud.dynamodb.DynamoDbTemplate;
+import com.example.demo.repository.FileMetadataRepository;
 import io.awspring.cloud.s3.S3Resource;
 import io.awspring.cloud.s3.S3Template;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,14 +21,14 @@ public class StorageCoreService {
 
     private final S3Template s3Template;
     private final String bucketName;
-    private final DynamoDbTemplate dynamoDbTemplate;
+    private final FileMetadataRepository fileMetadataRepository;
 
     public StorageCoreService(S3Template s3Template,
                               @Value("${S3_UPLOAD_BUCKET_NAME}") String bucketName,
-                              DynamoDbTemplate dynamoDbTemplate) {
+                              FileMetadataRepository fileMetadataRepository) {
         this.s3Template = s3Template;
         this.bucketName = bucketName;
-        this.dynamoDbTemplate = dynamoDbTemplate;
+        this.fileMetadataRepository = fileMetadataRepository;
     }
 
     /**
@@ -57,7 +54,7 @@ public class StorageCoreService {
                     .folderId(folderId)
                     .build();
 
-            dynamoDbTemplate.save(metadata);
+            fileMetadataRepository.save(metadata);
             log.info("Core: Upload erfolgreich. FileID: {}", fileId);
             return fileId;
 
@@ -72,13 +69,13 @@ public class StorageCoreService {
      */
     public void deletePhysicalFile(String fileId) {
         try {
-            FileMetadata metadata = getFileMetadata(fileId);
+            FileMetadata metadata = fileMetadataRepository.findById(fileId);
 
             // 1. S3 Clean
             s3Template.deleteObject(bucketName, metadata.getS3Key());
 
             // 2. DB Clean
-            dynamoDbTemplate.delete(metadata);
+            fileMetadataRepository.delete(metadata);
 
             log.info("Core: Datei {} erfolgreich gelöscht.", fileId);
         } catch (Exception e) {
@@ -93,41 +90,32 @@ public class StorageCoreService {
     public void deletePhysicalFile(FileMetadata metadata) {
         try {
             s3Template.deleteObject(bucketName, metadata.getS3Key());
-            dynamoDbTemplate.delete(metadata);
+            fileMetadataRepository.delete(metadata);
         } catch (Exception e) {
             log.warn("Core: Batch-Delete Fehler für {}: {}", metadata.getFileId(), e.getMessage());
         }
     }
 
     public S3Resource downloadFile(String fileId) {
-        FileMetadata metadata = getFileMetadata(fileId);
+        FileMetadata metadata = fileMetadataRepository.findById(fileId);
         return s3Template.download(bucketName, metadata.getS3Key());
     }
 
-    // --- Helper & Reads ---
+    public List<FileMetadata> fetchFilesForFolder(String folderId) {
+        return fileMetadataRepository.findAllByFolderId(folderId);
+    }
 
     public FileMetadata getFileMetadata(String fileId) {
-        FileMetadata metadata = dynamoDbTemplate.load(
-                Key.builder().partitionValue(fileId).build(),
-                FileMetadata.class
-        );
-        if (metadata == null) throw new RuntimeException("Datei nicht gefunden: " + fileId);
-        return metadata;
+        return fileMetadataRepository.findById(fileId);
     }
 
-    public List<FileMetadata> fetchFilesForFolder(String folderId) {
-        return dynamoDbTemplate.query(
-                QueryEnhancedRequest.builder()
-                        .queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(folderId)))
-                        .build(),
-                FileMetadata.class,
-                "FolderIndex"
-        ).items().stream().toList();
-    }
-
+    // --- Helper & Reads ---
     public long calculateCurrentFolderSize(String folderId) {
-        return fetchFilesForFolder(folderId).stream()
-                .mapToLong(FileMetadata::getFileSize)
-                .sum();
+        List<FileMetadata> metadata = fileMetadataRepository.findAllByFolderId(folderId);
+        return metadata.stream().mapToLong(FileMetadata::getFileSize).sum();
+    }
+
+    public int getFileCount(String folderId) {
+        return fetchFilesForFolder(folderId).size();
     }
 }

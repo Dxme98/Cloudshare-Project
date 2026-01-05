@@ -70,10 +70,37 @@ resource "aws_iam_policy" "dynamodb_access" {
           "dynamodb:Scan"
         ]
         Resource = [aws_dynamodb_table.file_metadata.arn, aws_dynamodb_table.folder.arn,
-          "${aws_dynamodb_table.file_metadata.arn}/index/FolderIndex", "${aws_dynamodb_table.folder.arn}/index/*"]
+          "${aws_dynamodb_table.file_metadata.arn}/index/FolderIndex", "${aws_dynamodb_table.folder.arn}/index/*",
+          aws_dynamodb_table.folder_shares.arn,
+          "${aws_dynamodb_table.folder_shares.arn}/index/*"]
       }
     ]
   })
+}
+
+resource "aws_iam_policy" "cognito_access" {
+  name        = "CloudShareCognitoAccess"
+  description = "Erlaubt dem ECS Task das Suchen von Usern im Cognito User Pool"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:GetUser"
+        ]
+        Resource = [aws_cognito_user_pool.main.arn]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "attach_cognito" {
+  policy_arn = aws_iam_policy.cognito_access.arn
+  role       = aws_iam_role.ecs_task_role.name
 }
 
 resource "aws_iam_role_policy_attachment" "attach_s3" {
@@ -140,6 +167,10 @@ resource "aws_ecs_task_definition" "cloudshare_task" {
         {
           name = "COGNITO_ISSUER_URI",
           value = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
+        },
+        {
+          name = "COGNITO_USERPOOL_ID",
+          value = aws_cognito_user_pool.main.id
         }
       ]
     }

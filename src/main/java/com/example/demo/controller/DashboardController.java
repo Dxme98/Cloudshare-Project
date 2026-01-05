@@ -1,11 +1,10 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.FolderResponse;
-import com.example.demo.model.FolderSummaryDTO;
+import com.example.demo.model.*;
 import com.example.demo.service.DashboardService;
-import com.example.demo.model.FolderInitResponse;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -134,5 +133,23 @@ public class DashboardController {
         dashboardService.deleteFolder(folderId, userId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{folderId}/share")
+    public ResponseEntity<Void> shareFolder(@PathVariable String folderId, @AuthenticationPrincipal Jwt jwt,
+                                            @RequestBody ShareRequest shareRequest) {
+        String userId = jwt.getClaimAsString("sub");
+        dashboardService.shareFolder(folderId, userId, shareRequest);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/shared")
+    public ResponseEntity<List<FolderShare>> getSharedFolders(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getClaimAsString("sub");
+
+        List<FolderShare> sharedFolders = dashboardService.getSharedFolders(userId);
+
+        return ResponseEntity.ok(sharedFolders);
     }
 }

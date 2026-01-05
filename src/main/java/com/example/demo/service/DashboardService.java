@@ -2,16 +2,14 @@ package com.example.demo.service;
 
 import com.example.demo.exceptions.*;
 import com.example.demo.model.*;
-import io.awspring.cloud.dynamodb.DynamoDbTemplate;
+import com.example.demo.repository.FolderRepository;
+import com.example.demo.repository.FolderShareRepository;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -23,7 +21,9 @@ import java.util.UUID;
 public class DashboardService {
 
     private final StorageCoreService storageCore;
-    private final DynamoDbTemplate dynamoDbTemplate;
+    private final FolderRepository folderRepository;
+    private final UserLookupService userLookupService;
+    private final FolderShareRepository folderShareRepository;
 
     // Ggf. höheres Limit für eingeloggte User
     private static final long MAX_USER_FOLDER_SIZE = 1024L * 1024 * 1024; // 1 GB
@@ -44,22 +44,16 @@ public class DashboardService {
                 .ttl(null) // Nie löschen
                 .build();
 
-        dynamoDbTemplate.save(folder);
+        folderRepository.save(folder);
         return FolderMapper.toInitResponse(folder);
     }
 
     public List<FolderSummaryDTO> getMyFolders(String userId) {
-        List<Folder> folders =  dynamoDbTemplate.query(
-                QueryEnhancedRequest.builder()
-                        .queryConditional(QueryConditional.keyEqualTo(k -> k.partitionValue(userId)))
-                        .build(),
-                Folder.class,
-                "UserIndex"
-        ).items().stream().toList();
+        List<Folder> folders =  folderRepository.findAllByUserId(userId);
 
         return folders.stream().map(folder -> {
             // Hier berechnen wir die Anzahl der Dateien pro Ordner, can be more efficient
-            long count = storageCore.fetchFilesForFolder(folder.getFolderId()).size();
+            long count = storageCore.calculateCurrentFolderSize(folder.getFolderId());
 
             return FolderSummaryDTO.builder()
                     .id(folder.getFolderId())
@@ -123,20 +117,58 @@ public class DashboardService {
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
         files.forEach(storageCore::deletePhysicalFile);
 
-        Folder folder = new Folder();
-        folder.setFolderId(folderId);
-        dynamoDbTemplate.delete(folder);
+        folderRepository.delete(folderId);
+    }
+
+    public void shareFolder(String folderId, String ownerId, ShareRequest shareRequest) {
+        Folder folder = findAndValidateOwner(folderId, ownerId);
+
+        String targetEmail = shareRequest.getTargetEmail();
+        Role role = shareRequest.getRole();
+
+        String targetUserId = userLookupService.findUserIdByEmail(targetEmail);
+
+        if (targetUserId.equals(ownerId)) {
+            throw new IllegalArgumentException("Du kannst Ordner nicht mit dir selbst teilen.");
+        }
+
+        FolderShare folderShare = FolderShare.builder()
+                .folderId(folderId)
+                .role(role)
+                .ownerId(ownerId)
+                .folderName(folder.getFolderName())
+                .userId(targetUserId)
+                .build();
+
+        folderShareRepository.save(folderShare);
+
+        log.info("Folder {} erfolgreich geteilt von {} an {} ({})",
+                folderId, ownerId, targetEmail, role);
+    }
+
+    // hier korrektes dto bauen
+    public List<FolderShare> getSharedFolders(String userId) {
+        return folderShareRepository.findByUserId(userId)
+                .items()
+                .stream()
+                .toList();
     }
 
     // --- HELPERS ---
 
     private Folder findAndValidateOwner(String folderId, String userId) {
-        Folder f = dynamoDbTemplate.load(Key.builder().partitionValue(folderId).build(), Folder.class);
-        if (f == null) throw new FolderNotFoundException(folderId);
+        // 1. Schritt: Wir suchen exakt den Ordner, um den es geht.
+        // Das Repository wirft bereits FolderNotFoundException, wenn die ID nicht existiert.
+        Folder folder = folderRepository.findById(folderId);
 
-        if (!userId.equals(f.getUserId())) {
+        // 2. Schritt: Wir prüfen, ob der User, der die Anfrage stellt, auch der Besitzer ist.
+        // Sicherheitshalber ein Null-Check, falls userId im Objekt null sein sollte.
+        if (folder.getUserId() == null || !folder.getUserId().equals(userId)) {
+            log.warn("Security Alert: User {} versuchte auf Ordner {} zuzugreifen (Owner: {})",
+                    userId, folderId, folder.getUserId());
             throw new AccessDeniedException("Dieser Ordner gehört dir nicht.");
         }
-        return f;
+
+        return folder;
     }
 }

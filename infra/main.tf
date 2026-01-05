@@ -44,6 +44,39 @@ resource "aws_dynamodb_table" "file_metadata" {
   }
 }
 
+resource "aws_dynamodb_table" "folder_shares" {
+  name           = "FolderShare"
+  billing_mode   = "PAY_PER_REQUEST"
+
+  # --- Haupt-Index (Base Table) ---
+  hash_key       = "userId"
+  range_key      = "folderId"
+
+  # Definition der Attribute (nur Keys müssen definiert werden)
+  attribute {
+    name = "userId"
+    type = "S"
+  }
+
+  attribute {
+    name = "folderId"
+    type = "S"
+  }
+
+  # --- Global Secondary Index (GSI) ---
+  global_secondary_index {
+    name               = "gsi_folder_lookup"
+    hash_key           = "folderId"
+    range_key          = "userId"
+    projection_type    = "ALL"
+  }
+
+  tags = {
+    Environment = "dev"
+    Project     = "CloudShare"
+  }
+}
+
 
 resource "aws_dynamodb_table" "folder" {
   name           = "folder"
