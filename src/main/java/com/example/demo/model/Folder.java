@@ -20,12 +20,14 @@ public class Folder {
     private String createdAt;
 
     private FolderType type;
-    @Getter(onMethod_ = {@DynamoDbSecondaryPartitionKey(indexNames = "UserIndex")})
     private String userId;
 
 
     @DynamoDbPartitionKey
     public String getFolderId() { return folderId; }
+
+    @DynamoDbSecondaryPartitionKey(indexNames = "UserIndex")
+    public String getUserId() { return userId; }
 
     public void setFolderId(String folderId) { this.folderId = folderId; }
 }
