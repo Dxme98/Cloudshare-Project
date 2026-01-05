@@ -69,16 +69,32 @@ public class DashboardService {
      * Prüft, ob der Ordner dem User gehört.
      */
     public FolderResponse openFolder(String folderId, String userId) {
-        // 1. Validierung: Gehört der Ordner mir?
-        Folder folder = findAndValidateOwner(folderId, userId);
+        // 1. Hole den Ordner (Metadaten)
+        // Wir nutzen findById direkt, da wir die Owner-Prüfung manuell machen wollen
+        Folder folder = folderRepository.findById(folderId);
 
-        // 2. Dateien laden (via Core Service)
+        String role;
+
+        // 2. Prüfen: Bin ich der Owner?
+        if (folder.getUserId().equals(userId)) {
+            role = "OWNER";
+        } else {
+            // 3. Wenn nicht Owner: Habe ich einen Shared-Eintrag?
+            // Wir nutzen deine existierende Repository-Methode!
+            FolderShare share = folderShareRepository.findAccess(userId, folderId)
+                    .orElseThrow(() -> new AccessDeniedException(
+                            "Zugriff verweigert. Dieser Ordner wurde nicht mit dir geteilt."
+                    ));
+
+            // Hole die Rolle aus dem Share-Objekt (VIEWER oder CONTRIBUTOR)
+            role = share.getRole().name();
+        }
+
+        // 4. Dateien laden (via Core Service)
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
 
-        // 3. Response bauen
-        // Wir geben hier den OwnerToken mit zurück, falls der User
-        // später im Dashboard einen Share-Link generieren will.
-        return FolderMapper.toResponse(folder, folder.getOwnerToken(), files);
+        // 5. Response bauen
+        return FolderMapper.toResponse(folder, files, role);
     }
 
     // --- FILE OPERATIONS ---

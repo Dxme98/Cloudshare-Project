@@ -18,4 +18,6 @@ public class FolderResponse {
 
     @JsonProperty("files")
     private List<FileMetadata> fileMetadataList;
+
+    private String role;
 }

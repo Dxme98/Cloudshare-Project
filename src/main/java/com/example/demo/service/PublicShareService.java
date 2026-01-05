@@ -49,8 +49,13 @@ public class PublicShareService {
         Folder folder = folderRepository.findById(folderId);
         validateToken(folder, token); // Check: Owner oder Share Token
 
+        Role role = Role.VIEWER;
+        if(Objects.equals(token, folder.getOwnerToken())) {
+            role = Role.OWNER;
+        }
+
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
-        return FolderMapper.toResponse(folder, token, files);
+        return FolderMapper.toResponse(folder, files, role.toString());
     }
 
     // --- FILE OPERATIONS ---

@@ -17,7 +17,7 @@ public class FolderMapper {
     }
 
 
-    public static FolderResponse toResponse(Folder folder, String inputToken, List<FileMetadata> fileMetadataList) {
+    public static FolderResponse toResponse(Folder folder, List<FileMetadata> fileMetadataList, String role) {
         if (folder == null) return null;
 
 
@@ -25,6 +25,8 @@ public class FolderMapper {
         response.setFolderId(folder.getFolderId());
         response.setFolderName(folder.getFolderName());
         response.setType(folder.getType().toString().toLowerCase());
+        response.setRole(role);
+        response.setShareToken(folder.getShareToken());
 
         if (fileMetadataList == null) {
             response.setFileMetadataList(new ArrayList<>());
@@ -32,9 +34,8 @@ public class FolderMapper {
             response.setFileMetadataList(fileMetadataList);
         }
 
-        response.setOwner(inputToken != null && inputToken.equals(folder.getOwnerToken()));
-
-        if(response.isOwner()) response.setShareToken(folder.getShareToken());
+        boolean isOwner = "OWNER".equals(role);
+        response.setOwner(isOwner);
 
         return response;
     }
