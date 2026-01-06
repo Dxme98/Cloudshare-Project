@@ -1,7 +1,15 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.request.CreateFolderRequest;
+import com.example.demo.dto.request.ShareRequest;
+import com.example.demo.dto.response.*;
+import com.example.demo.entity.FileMetadata;
+import com.example.demo.entity.Folder;
+import com.example.demo.entity.FolderShare;
+import com.example.demo.enums.Role;
 import com.example.demo.exceptions.*;
-import com.example.demo.model.*;
+import com.example.demo.mapper.FolderMapper;
+import com.example.demo.mapper.SharedFolderMapper;
 import com.example.demo.repository.FolderRepository;
 import com.example.demo.repository.FolderShareRepository;
 import io.awspring.cloud.s3.S3Resource;
@@ -28,7 +36,9 @@ public class DashboardService {
 
     // --- FOLDER MANAGEMENT ---
 
-    public FolderInitResponse createPermanentFolder(String userId, String folderName) {
+    public FolderInitResponse createPermanentFolder(String userId, CreateFolderRequest createFolderRequest) {
+        String folderName = createFolderRequest.getName();
+
         Folder folder = Folder.createPermanentFolder(userId, folderName);
         folderRepository.save(folder);
 
@@ -37,7 +47,7 @@ public class DashboardService {
         return FolderMapper.toInitResponse(folder);
     }
 
-    public List<FolderSummaryDTO> getMyFolders(String userId) {
+    public List<FolderSummaryResponse> getMyFolders(String userId) {
         log.debug("Fetching folder list for User: {}", userId);
         List<Folder> folders =  folderRepository.findAllByUserId(userId);
 
@@ -56,24 +66,24 @@ public class DashboardService {
 
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
 
-        return FolderMapper.toResponse(folder, files, role.toString());
+        return FolderMapper.toResponse(folder, files, role.name());
     }
 
-    public List<FolderMemberDTO> getFolderMembers(String folderId, String userId) {
+    public List<FolderMemberResponse> getFolderMembers(String folderId, String userId) {
         findAndValidateOwner(folderId, userId);
 
-        List<FolderMemberDTO> members = new ArrayList<>();
+        List<FolderMemberResponse> members = new ArrayList<>();
 
         String ownerEmail = userLookupService.findEmailByUserId(userId);
         if (ownerEmail == null) ownerEmail = "You"; // Fallback
 
-        members.add(FolderMemberDTO.builder()
+        members.add(FolderMemberResponse.builder()
                 .userId(userId)
                 .email(ownerEmail)
                 .role(Role.OWNER)
                 .build());
 
-        List<FolderMemberDTO> sharedMembers = folderShareRepository.findByFolderId(folderId)
+        List<FolderMemberResponse> sharedMembers = folderShareRepository.findByFolderId(folderId)
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .map(share -> {
@@ -82,7 +92,7 @@ public class DashboardService {
                     // Fallback
                     if (email == null) email = "Unknown User";
 
-                    return FolderMemberDTO.builder()
+                    return FolderMemberResponse.builder()
                             .userId(share.getUserId())
                             .email(email)
                             .role(share.getRole())
@@ -107,21 +117,23 @@ public class DashboardService {
                 folderId, ownerId, targetUserId);
     }
 
-    public String updateShareToken(String folderId, String userId) {
+    public ShareTokenResponse updateShareToken(String folderId, String userId) {
         Folder folder = findAndValidateOwner(folderId, userId);
 
         String newToken = folder.updateShareToken();
+
 
         folderRepository.save(folder);
 
         log.info("Share token regenerated for folder {}. User: {}", folderId, userId);
 
-        return newToken;
+
+        return ShareTokenResponse.create(newToken);
     }
 
     // --- FILE OPERATIONS ---
 
-    public String uploadFile(String folderId, String userId, MultipartFile file) {
+    public FileUploadResponse uploadFile(String folderId, String userId, MultipartFile file) {
         Folder folder = folderRepository.findById(folderId);
         Role role = checkForSharedAccessReturnsRole(userId, folder);
 
@@ -141,7 +153,7 @@ public class DashboardService {
         log.info("File uploaded successfully. Name: '{}', Size: {} bytes, User: {}, Folder: {}",
                 file.getOriginalFilename(), file.getSize(), userId, folderId);
 
-        return fileId;
+        return FileUploadResponse.create(fileId);
     }
 
     public S3Resource downloadFile(String folderId, String fileId, String userId) {
@@ -228,11 +240,12 @@ public class DashboardService {
                 folderId, ownerId, targetEmail, targetUserId, role);
     }
 
-    public List<FolderShare> getSharedFolders(String userId) {
+    public List<SharedFolderResponse> getSharedFolders(String userId) {
         log.debug("Fetching shared folders for User: {}", userId);
         return folderShareRepository.findByUserId(userId)
                 .items()
                 .stream()
+                .map(SharedFolderMapper::toResponse)
                 .toList();
     }
 

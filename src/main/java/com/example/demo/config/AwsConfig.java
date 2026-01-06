@@ -12,7 +12,6 @@ public class AwsConfig {
     @Bean
     public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
         return CognitoIdentityProviderClient.builder()
-                // Nutzt die Region des Containers oder "eu-central-1" als Fallback
                 .region(Region.EU_CENTRAL_1)
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();

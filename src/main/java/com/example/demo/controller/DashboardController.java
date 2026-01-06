@@ -1,8 +1,11 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.*;
+import com.example.demo.dto.request.CreateFolderRequest;
+import com.example.demo.dto.request.ShareRequest;
+import com.example.demo.dto.response.*;
 import com.example.demo.service.DashboardService;
 import io.awspring.cloud.s3.S3Resource;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,13 +17,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/dashboard/folders")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class DashboardController {
     private final DashboardService dashboardService;
 
@@ -29,10 +32,10 @@ public class DashboardController {
      * Die User-ID kommt sicher aus dem Token (kann nicht gefälscht werden).
      */
     @GetMapping
-    public ResponseEntity<List<FolderSummaryDTO>> getMyFolders(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<FolderSummaryResponse>> getMyFolders(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getClaimAsString("sub");
 
-        List<FolderSummaryDTO> folders = dashboardService.getMyFolders(userId);
+        List<FolderSummaryResponse> folders = dashboardService.getMyFolders(userId);
         return ResponseEntity.ok(folders);
     }
 
@@ -53,32 +56,32 @@ public class DashboardController {
     @PostMapping
     public ResponseEntity<FolderInitResponse> createPermanentFolder(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "My Project") String name) {
+            @Valid @RequestBody CreateFolderRequest createFolderRequest) {
 
         String userId = jwt.getClaimAsString("sub");
 
-        FolderInitResponse response = dashboardService.createPermanentFolder(userId, name);
+        FolderInitResponse response = dashboardService.createPermanentFolder(userId, createFolderRequest);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{folderId}/members")
-    public ResponseEntity<List<FolderMemberDTO>> getFolderMembers(
+    public ResponseEntity<List<FolderMemberResponse>> getFolderMembers(
             @PathVariable String folderId,
             @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getClaimAsString("sub");
-        List<FolderMemberDTO> members = dashboardService.getFolderMembers(folderId, userId);
+        List<FolderMemberResponse> members = dashboardService.getFolderMembers(folderId, userId);
 
         return ResponseEntity.ok(members);
     }
 
     @PutMapping("/{folderId}/share-token")
-    public ResponseEntity<String> updateShareToken(
+    public ResponseEntity<ShareTokenResponse> updateShareToken(
             @PathVariable String folderId,
             @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getClaimAsString("sub");
-        String newToken = dashboardService.updateShareToken(folderId, userId);
+        ShareTokenResponse newToken = dashboardService.updateShareToken(folderId, userId);
 
         return ResponseEntity.ok(newToken);
     }
@@ -100,15 +103,15 @@ public class DashboardController {
      * Upload: Hier brauchen wir KEINEN Token, denn wir haben den JWT User.
      */
     @PostMapping("/{folderId}/files")
-    public ResponseEntity<String> uploadFile(
+    public ResponseEntity<FileUploadResponse> uploadFile(
             @PathVariable String folderId,
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal Jwt jwt) {
 
         String userId = jwt.getClaimAsString("sub");
-        String fileId = dashboardService.uploadFile(folderId, userId, file);
+        FileUploadResponse response = dashboardService.uploadFile(folderId, userId, file);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
@@ -118,26 +121,20 @@ public class DashboardController {
     public ResponseEntity<StreamingResponseBody> downloadFile(
             @PathVariable String folderId,
             @PathVariable String fileId,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt) throws IOException {
 
         String userId = jwt.getClaimAsString("sub");
         S3Resource resource = dashboardService.downloadFile(folderId, fileId, userId);
 
-        String filename = resource.getFilename();
-        long contentLength = -1;
-        try { contentLength = resource.contentLength(); } catch (Exception ignored) {}
-
-        StreamingResponseBody responseBody = outputStream -> {
-            try (InputStream is = resource.getInputStream()) {
-                is.transferTo(outputStream);
-            }
-        };
-
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                .contentLength(contentLength)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .contentLength(resource.contentLength()) // Kann IOException werfen
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(responseBody);
+                .body(os -> {
+                    try (InputStream is = resource.getInputStream()) {
+                        is.transferTo(os);
+                    }
+                });
     }
 
     /**
@@ -171,7 +168,7 @@ public class DashboardController {
 
     @PostMapping("/{folderId}/share")
     public ResponseEntity<Void> shareFolder(@PathVariable String folderId, @AuthenticationPrincipal Jwt jwt,
-                                            @RequestBody ShareRequest shareRequest) {
+                                            @Valid @RequestBody ShareRequest shareRequest) {
         String userId = jwt.getClaimAsString("sub");
         dashboardService.shareFolder(folderId, userId, shareRequest);
 
@@ -179,10 +176,10 @@ public class DashboardController {
     }
 
     @GetMapping("/shared")
-    public ResponseEntity<List<FolderShare>> getSharedFolders(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<List<SharedFolderResponse>> getSharedFolders(@AuthenticationPrincipal Jwt jwt) {
         String userId = jwt.getClaimAsString("sub");
 
-        List<FolderShare> sharedFolders = dashboardService.getSharedFolders(userId);
+        List<SharedFolderResponse> sharedFolders = dashboardService.getSharedFolders(userId);
 
         return ResponseEntity.ok(sharedFolders);
     }

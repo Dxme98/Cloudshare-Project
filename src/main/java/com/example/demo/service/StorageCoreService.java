@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.model.FileMetadata;
+import com.example.demo.entity.FileMetadata;
 import com.example.demo.repository.FileMetadataRepository;
 import io.awspring.cloud.s3.S3Resource;
 import io.awspring.cloud.s3.S3Template;

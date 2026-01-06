@@ -1,5 +1,6 @@
-package com.example.demo.model;
+package com.example.demo.entity;
 
+import com.example.demo.enums.FolderType;
 import lombok.*;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;

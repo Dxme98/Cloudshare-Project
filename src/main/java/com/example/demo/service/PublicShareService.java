@@ -1,9 +1,15 @@
 package com.example.demo.service;
 
+import com.example.demo.dto.response.FileUploadResponse;
+import com.example.demo.dto.response.FolderInitResponse;
+import com.example.demo.dto.response.FolderResponse;
+import com.example.demo.entity.FileMetadata;
+import com.example.demo.entity.Folder;
+import com.example.demo.enums.FolderType;
+import com.example.demo.enums.Role;
 import com.example.demo.exceptions.*;
-import com.example.demo.model.*;
+import com.example.demo.mapper.FolderMapper;
 import com.example.demo.repository.FolderRepository;
-import io.awspring.cloud.dynamodb.DynamoDbTemplate;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,12 +61,12 @@ public class PublicShareService {
         }
 
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
-        return FolderMapper.toResponse(folder, files, role.toString());
+        return FolderMapper.toResponse(folder, files, role.name());
     }
 
     // --- FILE OPERATIONS ---
 
-    public String uploadFileWithToken(String folderId, String token, MultipartFile file) {
+    public FileUploadResponse uploadFileWithToken(String folderId, String token, MultipartFile file) {
         Folder folder = folderRepository.findById(folderId);
         validateOwnerToken(folder, token); // Nur Owner darf uploaden
 
@@ -70,7 +76,9 @@ public class PublicShareService {
             throw new StorageLimitExceededException(used, MAX_FOLDER_SIZE_BYTES);
         }
 
-        return storageCore.uploadPhysicalFile(folderId, file);
+        String fileId = storageCore.uploadPhysicalFile(folderId, file);
+
+        return FileUploadResponse.create(fileId);
     }
 
     public S3Resource downloadFile(String folderId, String fileId, String token) {

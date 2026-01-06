@@ -1,4 +1,4 @@
-package com.example.demo.model;
+package com.example.demo.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class FolderSummaryDTO {
+public class FolderSummaryResponse {
     private String id;
     private String name;
     private String createdAt;

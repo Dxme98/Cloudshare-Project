@@ -19,25 +19,24 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. CORS aktivieren
+                // CORS aktivieren
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                // 2. CSRF deaktivieren (nicht nötig für Stateless REST APIs)
+                // CSRF deaktivieren (nicht nötig für Stateless REST APIs)
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // 3. Regeln definieren
                 .authorizeHttpRequests(auth -> auth
-                        // A) Die öffentlichen Endpoints (Anonymer Flow)
+                        // Die öffentlichen Endpoints (Anonymer Flow)
                         .requestMatchers("/api/folders/**", "/api/files/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
 
-                        // B) Der neue geschützte Bereich (kommt gleich)
+                        // Der Auth Bereich (nach Anmeldung)
                         .requestMatchers("/api/dashboard/**").authenticated()
 
                         // C) Alles andere blockieren
                         .anyRequest().authenticated()
                 )
 
-                // 4. Wir sind ein Resource Server und wollen JWTs validieren
+                // 4. Backend fungiert als Resource Server
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
         return http.build();

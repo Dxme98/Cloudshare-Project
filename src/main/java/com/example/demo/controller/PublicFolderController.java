@@ -1,7 +1,8 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.FolderInitResponse;
-import com.example.demo.model.FolderResponse;
+import com.example.demo.dto.response.FileUploadResponse;
+import com.example.demo.dto.response.FolderInitResponse;
+import com.example.demo.dto.response.FolderResponse;
 import com.example.demo.service.PublicShareService;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,6 @@ import java.io.InputStream;
 @RestController
 @RequestMapping("/api/folders")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class PublicFolderController {
 
     private final PublicShareService publicShareService;
@@ -50,13 +50,13 @@ public class PublicFolderController {
      * Lädt eine Datei in einen spezifischen Ordner hoch.
      */
     @PostMapping("/{folderId}/files")
-    public ResponseEntity<String> uploadFile(
+    public ResponseEntity<FileUploadResponse> uploadFile(
             @PathVariable String folderId,
             @RequestParam String token,
             @RequestParam("file") MultipartFile file) {
 
-        String fileId = publicShareService.uploadFileWithToken(folderId, token, file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(fileId);
+        FileUploadResponse response = publicShareService.uploadFileWithToken(folderId, token, file);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**

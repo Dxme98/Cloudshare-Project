@@ -1,7 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.exceptions.FolderNotFoundException;
-import com.example.demo.model.Folder;
+import com.example.demo.entity.Folder;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;

@@ -1,7 +1,7 @@
 package com.example.demo.repository;
 
 import com.example.demo.exceptions.FileMetadataNotFoundException;
-import com.example.demo.model.FileMetadata;
+import com.example.demo.entity.FileMetadata;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;

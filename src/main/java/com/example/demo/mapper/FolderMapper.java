@@ -1,4 +1,10 @@
-package com.example.demo.model;
+package com.example.demo.mapper;
+
+import com.example.demo.dto.response.FolderInitResponse;
+import com.example.demo.entity.FileMetadata;
+import com.example.demo.entity.Folder;
+import com.example.demo.dto.response.FolderResponse;
+import com.example.demo.dto.response.FolderSummaryResponse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,8 +47,8 @@ public class FolderMapper {
     }
 
 
-    public static FolderSummaryDTO toSummaryDto(Folder folder, long count) {
-        return FolderSummaryDTO.builder()
+    public static FolderSummaryResponse toSummaryDto(Folder folder, long count) {
+        return FolderSummaryResponse.builder()
                 .id(folder.getFolderId())
                 .name(folder.getFolderName())
                 .shareToken(folder.getShareToken())
