@@ -146,7 +146,8 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
         Effect   = "Allow"
         Action   = [
           "dynamodb:Query",
-          "dynamodb:DeleteItem"
+          "dynamodb:DeleteItem",
+          "dynamodb:BatchWriteItem"
         ]
         Resource = [
           aws_dynamodb_table.file_metadata.arn,
@@ -163,7 +164,6 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
           "dynamodb:GetShardIterator",
           "dynamodb:DescribeStream",
           "dynamodb:ListStreams",
-          "dynamodb:BatchWriteItem"
         ]
         Resource = [aws_dynamodb_table.folder.stream_arn]
       }
