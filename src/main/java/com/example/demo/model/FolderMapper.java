@@ -39,4 +39,14 @@ public class FolderMapper {
 
         return response;
     }
+
+
+    public static FolderSummaryDTO toSummaryDto(Folder folder, long count) {
+        return FolderSummaryDTO.builder()
+                .id(folder.getFolderId())
+                .name(folder.getFolderName())
+                .createdAt(folder.getCreatedAt())
+                .fileCount(count)
+                .build();
+    }
 }

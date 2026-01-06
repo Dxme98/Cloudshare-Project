@@ -5,6 +5,9 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
+import java.time.Instant;
+import java.util.UUID;
+
 @DynamoDbBean
 @Getter
 @Setter
@@ -30,4 +33,23 @@ public class Folder {
     public String getUserId() { return userId; }
 
     public void setFolderId(String folderId) { this.folderId = folderId; }
+
+    public static Folder createPermanentFolder(String userId, String folderName) {
+        String folderId = UUID.randomUUID().toString();
+        String shareToken = UUID.randomUUID().toString();
+        String ownerToken = UUID.randomUUID().toString();
+
+        return  Folder.builder()
+                .folderId(folderId)
+                .folderName(folderName != null ? folderName : "New Folder")
+                .type(FolderType.PERMANENT)
+                .userId(userId)
+                .shareToken(shareToken)
+                .ownerToken(ownerToken)
+                .createdAt(Instant.now().toString())
+                .ttl(null) // Nie löschen
+                .build();
+    }
+
+
 }

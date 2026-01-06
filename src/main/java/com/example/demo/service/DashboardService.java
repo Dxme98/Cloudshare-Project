@@ -11,9 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -25,115 +23,103 @@ public class DashboardService {
     private final UserLookupService userLookupService;
     private final FolderShareRepository folderShareRepository;
 
-    // Ggf. höheres Limit für eingeloggte User
     private static final long MAX_USER_FOLDER_SIZE = 1024L * 1024 * 1024; // 1 GB
 
     // --- FOLDER MANAGEMENT ---
 
     public FolderInitResponse createPermanentFolder(String userId, String folderName) {
-        String folderId = UUID.randomUUID().toString();
-
-        Folder folder = Folder.builder()
-                .folderId(folderId)
-                .folderName(folderName != null ? folderName : "New Folder")
-                .type(FolderType.PERMANENT)
-                .userId(userId)
-                .shareToken(UUID.randomUUID().toString())
-                .ownerToken(UUID.randomUUID().toString())
-                .createdAt(Instant.now().toString())
-                .ttl(null) // Nie löschen
-                .build();
-
+        Folder folder = Folder.createPermanentFolder(userId, folderName);
         folderRepository.save(folder);
+
+        log.info("Permanent folder created: '{}' (ID: {}) for User: {}", folderName, folder.getFolderId(), userId);
+
         return FolderMapper.toInitResponse(folder);
     }
 
     public List<FolderSummaryDTO> getMyFolders(String userId) {
+        log.debug("Fetching folder list for User: {}", userId);
         List<Folder> folders =  folderRepository.findAllByUserId(userId);
 
         return folders.stream().map(folder -> {
-            // Hier berechnen wir die Anzahl der Dateien pro Ordner, can be more efficient
-            long count = storageCore.calculateCurrentFolderSize(folder.getFolderId());
-
-            return FolderSummaryDTO.builder()
-                    .id(folder.getFolderId())
-                    .name(folder.getFolderName())
-                    .createdAt(folder.getCreatedAt())
-                    .fileCount(count)
-                    .build();
+            long count = storageCore.getFileCount(folder.getFolderId());
+            return FolderMapper.toSummaryDto(folder, count);
         }).toList();
     }
 
-    /**
-     * Öffnet einen spezifischen Ordner und zeigt den Inhalt an.
-     * Prüft, ob der Ordner dem User gehört.
-     */
     public FolderResponse openFolder(String folderId, String userId) {
-        // 1. Hole den Ordner (Metadaten)
-        // Wir nutzen findById direkt, da wir die Owner-Prüfung manuell machen wollen
         Folder folder = folderRepository.findById(folderId);
 
-        String role;
+        // Rolle ermitteln und loggen (hilft beim Debuggen von Berechtigungen)
+        Role role = checkForSharedAccessReturnsRole(userId, folder);
+        log.debug("User {} accessing folder {} with Role: {}", userId, folderId, role);
 
-        // 2. Prüfen: Bin ich der Owner?
-        if (folder.getUserId().equals(userId)) {
-            role = "OWNER";
-        } else {
-            // 3. Wenn nicht Owner: Habe ich einen Shared-Eintrag?
-            // Wir nutzen deine existierende Repository-Methode!
-            FolderShare share = folderShareRepository.findAccess(userId, folderId)
-                    .orElseThrow(() -> new AccessDeniedException(
-                            "Zugriff verweigert. Dieser Ordner wurde nicht mit dir geteilt."
-                    ));
-
-            // Hole die Rolle aus dem Share-Objekt (VIEWER oder CONTRIBUTOR)
-            role = share.getRole().name();
-        }
-
-        // 4. Dateien laden (via Core Service)
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
 
-        // 5. Response bauen
-        return FolderMapper.toResponse(folder, files, role);
+        return FolderMapper.toResponse(folder, files, role.toString());
     }
 
     // --- FILE OPERATIONS ---
 
     public String uploadFile(String folderId, String userId, MultipartFile file) {
-        Folder folder = findAndValidateOwner(folderId, userId);
+        Folder folder = folderRepository.findById(folderId);
+        Role role = checkForSharedAccessReturnsRole(userId, folder);
+
+        if (role == Role.VIEWER) {
+            log.warn("Access Denied: Viewer {} tried to upload file to folder {}", userId, folderId);
+            throw new AccessDeniedException("Viewer dürfen keine Dateien hochladen.");
+        }
 
         long used = storageCore.calculateCurrentFolderSize(folderId);
         if (used + file.getSize() > MAX_USER_FOLDER_SIZE) {
+            log.warn("Quota exceeded for folder {}: Current: {}, Added: {}, Limit: {}",
+                    folderId, used, file.getSize(), MAX_USER_FOLDER_SIZE);
             throw new StorageLimitExceededException(used, MAX_USER_FOLDER_SIZE);
         }
 
-        return storageCore.uploadPhysicalFile(folderId, file);
+        String fileId = storageCore.uploadPhysicalFile(folderId, file);
+        log.info("File uploaded successfully. Name: '{}', Size: {} bytes, User: {}, Folder: {}",
+                file.getOriginalFilename(), file.getSize(), userId, folderId);
+
+        return fileId;
     }
 
     public S3Resource downloadFile(String folderId, String fileId, String userId) {
-        // Hier könnte man erweitern: Darf User downloaden? (Owner oder "Shared With Me")
-        findAndValidateOwner(folderId, userId);
+        Folder folder = folderRepository.findById(folderId);
+        checkForSharedAccessReturnsRole(userId, folder); // Berechtigung prüfen
 
+        log.info("File download requested. FileID: {}, User: {}", fileId, userId);
         return storageCore.downloadFile(fileId);
     }
 
     public void deleteFile(String folderId, String fileId, String userId) {
-        findAndValidateOwner(folderId, userId);
+        Folder folder = folderRepository.findById(folderId);
+        Role role = checkForSharedAccessReturnsRole(userId, folder);
 
-        // Sicherstellen, dass File im Folder ist
+        if (role == Role.VIEWER) {
+            log.warn("Access Denied: Viewer {} tried to delete file {} in folder {}", userId, fileId, folderId);
+            throw new AccessDeniedException("Viewer dürfen keine Dateien löschen.");
+        }
+
         FileMetadata meta = storageCore.getFileMetadata(fileId);
-        if (!meta.getFolderId().equals(folderId)) throw new InvalidTokenException();
+        if (!meta.getFolderId().equals(folderId)) {
+            log.error("Security Mismatch: File {} does not belong to Folder {}", fileId, folderId);
+            throw new InvalidTokenException();
+        }
 
         storageCore.deletePhysicalFile(fileId);
+        log.info("File deleted. FileID: {}, User: {}, Folder: {}", fileId, userId, folderId);
     }
 
     public void deleteFolder(String folderId, String userId) {
         findAndValidateOwner(folderId, userId);
 
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
-        files.forEach(storageCore::deletePhysicalFile);
+        int fileCount = files.size();
 
+        files.forEach(storageCore::deletePhysicalFile);
         folderRepository.delete(folderId);
+
+        log.info("Folder deleted. ID: {}, User: {}, Deleted Files count: {}", folderId, userId, fileCount);
     }
 
     public void shareFolder(String folderId, String ownerId, ShareRequest shareRequest) {
@@ -141,7 +127,6 @@ public class DashboardService {
 
         String targetEmail = shareRequest.getTargetEmail();
         Role role = shareRequest.getRole();
-
         String targetUserId = userLookupService.findUserIdByEmail(targetEmail);
 
         if (targetUserId.equals(ownerId)) {
@@ -158,12 +143,13 @@ public class DashboardService {
 
         folderShareRepository.save(folderShare);
 
-        log.info("Folder {} erfolgreich geteilt von {} an {} ({})",
-                folderId, ownerId, targetEmail, role);
+        // Wichtiges Audit-Log: Wer hat wem welche Rechte gegeben?
+        log.info("Folder shared. FolderID: {}, Owner: {}, Target: {} (ID: {}), Role: {}",
+                folderId, ownerId, targetEmail, targetUserId, role);
     }
 
-    // hier korrektes dto bauen
     public List<FolderShare> getSharedFolders(String userId) {
+        log.debug("Fetching shared folders for User: {}", userId);
         return folderShareRepository.findByUserId(userId)
                 .items()
                 .stream()
@@ -173,18 +159,28 @@ public class DashboardService {
     // --- HELPERS ---
 
     private Folder findAndValidateOwner(String folderId, String userId) {
-        // 1. Schritt: Wir suchen exakt den Ordner, um den es geht.
-        // Das Repository wirft bereits FolderNotFoundException, wenn die ID nicht existiert.
         Folder folder = folderRepository.findById(folderId);
 
-        // 2. Schritt: Wir prüfen, ob der User, der die Anfrage stellt, auch der Besitzer ist.
-        // Sicherheitshalber ein Null-Check, falls userId im Objekt null sein sollte.
         if (folder.getUserId() == null || !folder.getUserId().equals(userId)) {
-            log.warn("Security Alert: User {} versuchte auf Ordner {} zuzugreifen (Owner: {})",
-                    userId, folderId, folder.getUserId());
+            // WARN level für Security Events ist Best Practice
+            log.warn("Security Alert: Unauthorized access attempt. User {} tried to access Owner-only Folder {}", userId, folderId);
             throw new AccessDeniedException("Dieser Ordner gehört dir nicht.");
         }
 
         return folder;
+    }
+
+    private Role checkForSharedAccessReturnsRole(String userId, Folder folder) {
+        if (folder.getUserId().equals(userId)) {
+            return Role.OWNER;
+        } else {
+            FolderShare share = folderShareRepository.findAccess(userId, folder.getFolderId())
+                    .orElseThrow(() -> {
+                        log.warn("Access Denied: User {} has no shared access to Folder {}", userId, folder.getFolderId());
+                        return new AccessDeniedException("Zugriff verweigert. Dir fehlen die nötigen Berechtigungen.");
+                    });
+
+            return share.getRole();
+        }
     }
 }

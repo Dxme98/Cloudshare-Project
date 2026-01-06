@@ -115,6 +115,7 @@ public class StorageCoreService {
         return metadata.stream().mapToLong(FileMetadata::getFileSize).sum();
     }
 
+
     public int getFileCount(String folderId) {
         return fetchFilesForFolder(folderId).size();
     }
