@@ -14,4 +14,5 @@ public class FolderSummaryDTO {
     private String name;
     private String createdAt;
     private long fileCount;
+    private String shareToken;
 }

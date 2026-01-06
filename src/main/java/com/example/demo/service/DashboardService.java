@@ -58,6 +58,51 @@ public class DashboardService {
         return FolderMapper.toResponse(folder, files, role.toString());
     }
 
+    public List<FolderMemberDTO> getFolderMembers(String folderId, String userId) {
+        findAndValidateOwner(folderId, userId);
+
+        return folderShareRepository.findByFolderId(folderId)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .map(share -> {
+                    String email = userLookupService.findEmailByUserId(share.getUserId());
+
+                    if (email == null) email = "Unknown User";
+
+                    return FolderMemberDTO.builder()
+                            .userId(share.getUserId())
+                            .email(email)
+                            .role(share.getRole())
+                            .build();
+                })
+                .toList();
+    }
+
+    public void removeCollaborator(String folderId, String ownerId, String targetUserId) {
+        findAndValidateOwner(folderId, ownerId);
+
+        if (ownerId.equals(targetUserId)) {
+            throw new IllegalArgumentException("Du kannst dich nicht selbst aus der Mitgliederliste entfernen.");
+        }
+
+        folderShareRepository.deleteShare(targetUserId, folderId);
+
+        log.info("Collaborator removed. Folder: {}, Owner: {}, Removed User: {}",
+                folderId, ownerId, targetUserId);
+    }
+
+    public String updateShareToken(String folderId, String userId) {
+        Folder folder = findAndValidateOwner(folderId, userId);
+
+        String newToken = folder.updateShareToken();
+
+        folderRepository.save(folder);
+
+        log.info("Share token regenerated for folder {}. User: {}", folderId, userId);
+
+        return newToken;
+    }
+
     // --- FILE OPERATIONS ---
 
     public String uploadFile(String folderId, String userId, MultipartFile file) {
@@ -155,6 +200,8 @@ public class DashboardService {
                 .stream()
                 .toList();
     }
+
+
 
     // --- HELPERS ---
 

@@ -51,5 +51,11 @@ public class Folder {
                 .build();
     }
 
+    public String updateShareToken() {
+        this.shareToken = UUID.randomUUID().toString();
+
+        return this.shareToken;
+    }
+
 
 }

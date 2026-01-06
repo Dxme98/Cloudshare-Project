@@ -4,7 +4,6 @@ import com.example.demo.model.*;
 import com.example.demo.service.DashboardService;
 import io.awspring.cloud.s3.S3Resource;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -60,6 +59,41 @@ public class DashboardController {
 
         FolderInitResponse response = dashboardService.createPermanentFolder(userId, name);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{folderId}/members")
+    public ResponseEntity<List<FolderMemberDTO>> getFolderMembers(
+            @PathVariable String folderId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String userId = jwt.getClaimAsString("sub");
+        List<FolderMemberDTO> members = dashboardService.getFolderMembers(folderId, userId);
+
+        return ResponseEntity.ok(members);
+    }
+
+    @PutMapping("/{folderId}/share-token")
+    public ResponseEntity<String> updateShareToken(
+            @PathVariable String folderId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String userId = jwt.getClaimAsString("sub");
+        String newToken = dashboardService.updateShareToken(folderId, userId);
+
+        return ResponseEntity.ok(newToken);
+    }
+
+    @DeleteMapping("/{folderId}/members/{targetUserId}")
+    public ResponseEntity<Void> removeCollaborator(
+            @PathVariable String folderId,
+            @PathVariable String targetUserId,
+            @AuthenticationPrincipal Jwt jwt) {
+
+        String ownerId = jwt.getClaimAsString("sub");
+
+        dashboardService.removeCollaborator(folderId, ownerId, targetUserId);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**

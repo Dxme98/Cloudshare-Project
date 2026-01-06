@@ -45,6 +45,7 @@ public class FolderMapper {
         return FolderSummaryDTO.builder()
                 .id(folder.getFolderId())
                 .name(folder.getFolderName())
+                .shareToken(folder.getShareToken())
                 .createdAt(folder.getCreatedAt())
                 .fileCount(count)
                 .build();

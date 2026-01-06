@@ -8,6 +8,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 @AllArgsConstructor
 @Builder
 @Setter
+@Getter
 public class FolderShare {
 
     private String userId;

@@ -26,6 +26,15 @@ public class FolderShareRepository {
         table.putItem(share);
     }
 
+    public void deleteShare(String targetUserId, String folderId) {
+        Key key = Key.builder()
+                .partitionValue(targetUserId) // PK: Der User, der Zugriff hat
+                .sortValue(folderId)          // SK: Der Ordner
+                .build();
+
+        table.deleteItem(key);
+    }
+
     // Für später: "Shared With Me"
     public PageIterable<FolderShare> findByUserId(String userId) {
         return table.query(r -> r.queryConditional(
