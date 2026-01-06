@@ -11,6 +11,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -61,12 +62,24 @@ public class DashboardService {
     public List<FolderMemberDTO> getFolderMembers(String folderId, String userId) {
         findAndValidateOwner(folderId, userId);
 
-        return folderShareRepository.findByFolderId(folderId)
+        List<FolderMemberDTO> members = new ArrayList<>();
+
+        String ownerEmail = userLookupService.findEmailByUserId(userId);
+        if (ownerEmail == null) ownerEmail = "You"; // Fallback
+
+        members.add(FolderMemberDTO.builder()
+                .userId(userId)
+                .email(ownerEmail)
+                .role(Role.OWNER)
+                .build());
+
+        List<FolderMemberDTO> sharedMembers = folderShareRepository.findByFolderId(folderId)
                 .stream()
                 .flatMap(page -> page.items().stream())
                 .map(share -> {
                     String email = userLookupService.findEmailByUserId(share.getUserId());
 
+                    // Fallback
                     if (email == null) email = "Unknown User";
 
                     return FolderMemberDTO.builder()
@@ -76,6 +89,9 @@ public class DashboardService {
                             .build();
                 })
                 .toList();
+        members.addAll(sharedMembers);
+
+        return members;
     }
 
     public void removeCollaborator(String folderId, String ownerId, String targetUserId) {
