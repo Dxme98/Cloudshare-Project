@@ -160,11 +160,20 @@ public class DashboardService {
 
         List<FileMetadata> files = storageCore.fetchFilesForFolder(folderId);
         int fileCount = files.size();
-
         files.forEach(storageCore::deletePhysicalFile);
+
+        List<FolderShare> shares = folderShareRepository.findByFolderId(folderId)
+                .stream()
+                .flatMap(page -> page.items().stream())
+                .toList();
+
+        for (FolderShare share : shares) {
+            folderShareRepository.deleteShare(share.getUserId(), folderId);
+        }
         folderRepository.delete(folderId);
 
-        log.info("Folder deleted. ID: {}, User: {}, Deleted Files count: {}", folderId, userId, fileCount);
+        log.info("Folder deleted. ID: {}, User: {}, Deleted Files: {}, Removed Shares: {}",
+                folderId, userId, fileCount, shares.size());
     }
 
     public void shareFolder(String folderId, String ownerId, ShareRequest shareRequest) {
