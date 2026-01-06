@@ -150,7 +150,9 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
         ]
         Resource = [
           aws_dynamodb_table.file_metadata.arn,
-          "${aws_dynamodb_table.file_metadata.arn}/index/FolderIndex"
+          "${aws_dynamodb_table.file_metadata.arn}/index/FolderIndex",
+          aws_dynamodb_table.folder_shares.arn,
+          "${aws_dynamodb_table.folder_shares.arn}/index/gsi_folder_lookup"
         ]
       },
       {
@@ -204,6 +206,7 @@ resource "aws_lambda_function" "cleanup_lambda" {
     variables = {
       METADATA_TABLE_NAME = aws_dynamodb_table.file_metadata.name
       S3_BUCKET_NAME      = aws_s3_bucket.uploads.id
+      SHARE_TABLE_NAME    = aws_dynamodb_table.folder_shares.name
     }
   }
 }

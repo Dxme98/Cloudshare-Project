@@ -171,6 +171,7 @@ public class DashboardService {
         log.info("File deleted. FileID: {}, User: {}, Folder: {}", fileId, userId, folderId);
     }
 
+    /**
     public void deleteFolder(String folderId, String userId) {
         findAndValidateOwner(folderId, userId);
 
@@ -190,6 +191,15 @@ public class DashboardService {
 
         log.info("Folder deleted. ID: {}, User: {}, Deleted Files: {}, Removed Shares: {}",
                 folderId, userId, fileCount, shares.size());
+    }
+     */
+
+    public void deleteFolder(String folderId, String userId) {
+        findAndValidateOwner(folderId, userId);
+
+        folderRepository.delete(folderId);
+
+        log.info("Folder delete initiated via Async Lambda. ID: {}, User: {}", folderId, userId);
     }
 
     public void shareFolder(String folderId, String ownerId, ShareRequest shareRequest) {
