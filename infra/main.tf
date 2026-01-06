@@ -162,7 +162,8 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
           "dynamodb:GetRecords",
           "dynamodb:GetShardIterator",
           "dynamodb:DescribeStream",
-          "dynamodb:ListStreams"
+          "dynamodb:ListStreams",
+          "dynamodb:BatchWriteItem"
         ]
         Resource = [aws_dynamodb_table.folder.stream_arn]
       }
