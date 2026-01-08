@@ -171,6 +171,10 @@ resource "aws_ecs_task_definition" "cloudshare_task" {
         {
           name = "COGNITO_USERPOOL_ID",
           value = aws_cognito_user_pool.main.id
+        },
+        {
+          name  = "AWS_COGNITO_CLIENT_ID"
+          value = aws_cognito_user_pool_client.client.id
         }
       ]
     }

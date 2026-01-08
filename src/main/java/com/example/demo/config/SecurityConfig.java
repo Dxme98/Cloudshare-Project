@@ -26,8 +26,9 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         // Die öffentlichen Endpoints (Anonymer Flow)
-                        .requestMatchers("/api/folders/**", "/api/files/**").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/folders/**", "/api/files/**").permitAll() // application
+                        .requestMatchers("/actuator/health").permitAll() // actutator
+                        .requestMatchers("/api/auth/login", "/swagger-ui/**", "/v3/api-docs/**").permitAll() // swagger
 
                         // Der Auth Bereich (nach Anmeldung)
                         .requestMatchers("/api/dashboard/**").authenticated()
