@@ -7,6 +7,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @DynamoDbBean
@@ -27,6 +28,11 @@ public class Folder {
     private String userId;
 
 
+    private Long fileCount;
+    private Long usedStorage;
+    private Long maxStorage;
+
+
     @DynamoDbPartitionKey
     public String getFolderId() { return folderId; }
 
@@ -38,7 +44,6 @@ public class Folder {
     public static Folder createPermanentFolder(String userId, String folderName) {
         String folderId = UUID.randomUUID().toString();
         String shareToken = UUID.randomUUID().toString();
-        String ownerToken = UUID.randomUUID().toString();
 
         return  Folder.builder()
                 .folderId(folderId)
@@ -46,9 +51,27 @@ public class Folder {
                 .type(FolderType.PERMANENT)
                 .userId(userId)
                 .shareToken(shareToken)
-                .ownerToken(ownerToken)
+                .ownerToken(null)
+                .maxStorage(1024L * 1024 * 1024) // 1 GB
                 .createdAt(Instant.now().toString())
                 .ttl(null) // Nie löschen
+                .build();
+    }
+
+    public static Folder createTemporaryFolder( String folderName) {
+        String folderId = UUID.randomUUID().toString();
+        String shareToken = UUID.randomUUID().toString();
+        String ownerToken = UUID.randomUUID().toString();
+
+        return  Folder.builder()
+                .folderId(folderId)
+                .folderName(folderName != null ? folderName : "New Folder")
+                .type(FolderType.TEMPORARY)
+                .shareToken(shareToken)
+                .ownerToken(ownerToken)
+                .maxStorage(500L * 1024 * 1024) // 500 MB
+                .createdAt(Instant.now().toString())
+                .ttl(Instant.now().plus(24, ChronoUnit.HOURS).getEpochSecond()) // Nach 24h löschen
                 .build();
     }
 

@@ -16,6 +16,8 @@ public class FolderResponse {
     private boolean isOwner = false;
     private String type;
     private String shareToken;
+    private Long usedStorage;
+    private Long maxStorage;
 
     @JsonProperty("files")
     private List<FileMetadata> fileMetadataList;

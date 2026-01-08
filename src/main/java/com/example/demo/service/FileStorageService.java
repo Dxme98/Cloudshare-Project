@@ -55,9 +55,11 @@ public class FileStorageService {
         }
     }
 
-    public void deleteFile(String fileId) {
+    public FileMetadata deleteFile(String fileId) {
         FileMetadata metadata = fileMetadataRepository.findById(fileId);
         deleteFile(metadata);
+
+        return metadata;
     }
 
     public void deleteFile(FileMetadata metadata) {

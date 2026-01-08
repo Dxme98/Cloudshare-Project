@@ -52,10 +52,7 @@ public class DashboardService {
 
     public List<FolderSummaryResponse> getMyFolders(String userId) {
         return folderRepository.findAllByUserId(userId).stream()
-                .map(folder -> {
-                    long count = fileStorage.getFilesInFolder(folder.getFolderId()).size();
-                    return FolderMapper.toSummaryDto(folder, count);
-                })
+                .map(folder -> FolderMapper.toSummaryDto(folder))
                 .toList();
     }
 
@@ -85,6 +82,8 @@ public class DashboardService {
         }
 
         FileMetadata metadata = fileStorage.uploadFile(folderId, file);
+
+        folderRepository.incrementFolderStats(folderId, file.getSize());
         return FileUploadResponse.create(metadata.getFileId());
     }
 
@@ -97,7 +96,9 @@ public class DashboardService {
     public void deleteFile(String folderId, String fileId, String userId) {
         accessService.requireRole(userId, folderId, Role.CONTRIBUTOR);
         validateFileInFolder(fileId, folderId);
-        fileStorage.deleteFile(fileId);
+
+        FileMetadata metadata = fileStorage.deleteFile(fileId);
+        folderRepository.decrementFolderStats(folderId, metadata.getFileSize());
     }
 
     // --- SHARING ---

@@ -36,14 +36,7 @@ public class PublicShareService {
     private static final long MAX_TEMP_FOLDER_SIZE = 500 * 1024 * 1024; // 500 MB
 
     public FolderInitResponse initializeFolder() {
-        Folder folder = Folder.builder()
-                .folderId(UUID.randomUUID().toString())
-                .ownerToken(UUID.randomUUID().toString())
-                .shareToken(UUID.randomUUID().toString())
-                .ttl(Instant.now().plus(24, ChronoUnit.HOURS).getEpochSecond())
-                .folderName("Temporary Folder")
-                .type(FolderType.TEMPORARY)
-                .build();
+        Folder folder = Folder.createTemporaryFolder("Temporary Folder");
 
         folderRepository.save(folder);
         return FolderMapper.toInitResponse(folder);
@@ -68,6 +61,7 @@ public class PublicShareService {
         }
 
         FileMetadata metadata = fileStorage.uploadFile(folderId, file);
+        folderRepository.incrementFolderStats(folderId, metadata.getFileSize());
         return FileUploadResponse.create(metadata.getFileId());
     }
 
@@ -93,6 +87,7 @@ public class PublicShareService {
         }
 
         fileStorage.deleteFile(fileId);
+        folderRepository.decrementFolderStats(folderId, metadata.getFileSize());
     }
 
     // --- TOKEN VALIDATION ---

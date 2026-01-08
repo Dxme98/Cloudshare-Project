@@ -42,6 +42,11 @@ public class GlobalExceptionHandler {
         return buildResponse("STORAGE_LIMIT_EXCEEDED", ex.getMessage(), HttpStatus.PAYLOAD_TOO_LARGE); // 413 statt 400
     }
 
+    @ExceptionHandler(UserAlreadyHasAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUserAlreadyHasAccess(UserAlreadyHasAccessException ex) {
+        return buildResponse("STORAGE_LIMIT_EXCEEDED", ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         return buildResponse("USER_NOT_FOUND", ex.getMessage(), HttpStatus.NOT_FOUND);
