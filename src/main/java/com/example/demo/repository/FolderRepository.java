@@ -1,6 +1,6 @@
 package com.example.demo.repository;
 
-import com.example.demo.exceptions.FolderNotFoundException;
+import com.example.demo.exceptions.custom.FolderNotFoundException;
 import com.example.demo.entity.Folder;
 import org.springframework.stereotype.Repository;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
@@ -26,6 +26,10 @@ public class FolderRepository {
 
     public void delete(String folderId) {
         table.deleteItem(Key.builder().partitionValue(folderId).build());
+    }
+
+    public void delete(Folder folder) {
+        table.deleteItem(folder);
     }
 
     public Folder findById(String folderId) {

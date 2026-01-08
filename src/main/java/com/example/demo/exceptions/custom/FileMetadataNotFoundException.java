@@ -1,4 +1,4 @@
-package com.example.demo.exceptions;
+package com.example.demo.exceptions.custom;
 
 public class FileMetadataNotFoundException extends RuntimeException {
     public FileMetadataNotFoundException(String fileId) {

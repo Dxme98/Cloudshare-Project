@@ -5,6 +5,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
+import java.time.Instant;
+
 @DynamoDbBean
 @Getter
 @Setter
@@ -26,4 +28,9 @@ public class FileMetadata {
     public String getFolderId() { return folderId; }
 
     public void setFileId(String fileId) { this.fileId = fileId; }
+
+
+    public void setUploadDate() {
+        this.uploadDate = Instant.now().toString();
+    }
 }

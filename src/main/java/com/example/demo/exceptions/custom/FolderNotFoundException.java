@@ -1,4 +1,4 @@
-package com.example.demo.exceptions;
+package com.example.demo.exceptions.custom;
 
 public class FolderNotFoundException extends RuntimeException {
     public FolderNotFoundException(String id) {
