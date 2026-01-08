@@ -33,8 +33,9 @@ public class FolderMapper {
         response.setType(folder.getType().toString().toLowerCase());
         response.setRole(role);
         response.setShareToken(folder.getShareToken());
-        response.setUsedStorage(folder.getUsedStorage());
-        response.setMaxStorage(folder.getMaxStorage());
+
+        response.setUsedStorage(folder.getUsedStorage() != null ? folder.getUsedStorage() : 0L);
+        response.setMaxStorage(folder.getMaxStorage() != null ? folder.getMaxStorage() : 0L);
 
         if (fileMetadataList == null) {
             response.setFileMetadataList(new ArrayList<>());
@@ -50,12 +51,13 @@ public class FolderMapper {
 
 
     public static FolderSummaryResponse toSummaryDto(Folder folder) {
+        long fileCount = folder.getFileCount() != null ? folder.getFileCount() : 0L;
         return FolderSummaryResponse.builder()
                 .id(folder.getFolderId())
                 .name(folder.getFolderName())
                 .shareToken(folder.getShareToken())
                 .createdAt(folder.getCreatedAt())
-                .fileCount(folder.getFileCount())
+                .fileCount(fileCount)
                 .build();
     }
 }
