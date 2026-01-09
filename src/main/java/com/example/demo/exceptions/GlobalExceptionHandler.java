@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -107,6 +108,12 @@ public class GlobalExceptionHandler {
                 "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später erneut.",
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ErrorResponse> handleIOException(IOException ex) {
+        log.error("I/O Error occurred: {}", ex.getMessage());
+        return buildResponse("INTERNAL_ERROR", "Fehler bei der Dateiverarbeitung", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ExceptionHandler(DynamoDbException.class)
