@@ -30,7 +30,7 @@ public class AuthController {
 
     @Schema(description = "Login-Daten für den Demo-User")
     public record LoginRequest(
-            @Schema(description = "Email des Recruiters", example = "demo@test.de")
+            @Schema(description = "Email", example = "demo@test.de")
             String email,
 
             @Schema(description = "Passwort", example = "Demo123!")
@@ -39,11 +39,8 @@ public class AuthController {
 
     @Schema(description = "Antwort mit den Schlüsseln (Tokens)")
     public record TokenResponse(
-            @Schema(description = "Der Access Token (Ignorieren)")
-            String accessToken,
-
-            @Schema(description = "Kopiere diesen Token in den 'Authorize' Button oben rechts (Format: Bearer <token>)")
-            String idToken
+            @Schema(description = "Der Access Token, bitte  diesen kopieren.")
+            String accessToken
     ) {}
 
     // --- Endpoints ---
@@ -56,7 +53,7 @@ public class AuthController {
                     **Anleitung:**
                     1. Klicke auf 'Try it out'.
                     2. Die Credentials sind bereits vorausgefüllt (einfach 'Execute' drücken).
-                    3. Kopiere den `idToken` aus der Antwort.
+                    3. Kopiere den `accessToken` aus der Antwort.
                     4. Scrolle nach ganz oben zum grünen 'Authorize' Button.
                     5. Füge den Token dort ein."""
     )
@@ -86,9 +83,8 @@ public class AuthController {
         try {
             InitiateAuthResponse response = cognitoClient.initiateAuth(authRequest);
             String accessToken = response.authenticationResult().accessToken();
-            String idToken = response.authenticationResult().idToken();
 
-            return ResponseEntity.ok(new TokenResponse(accessToken, idToken));
+            return ResponseEntity.ok(new TokenResponse(accessToken));
 
         } catch (Exception e) {
             return ResponseEntity.status(401).build();

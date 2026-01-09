@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -93,13 +94,21 @@ public class PublicShareService {
     // --- TOKEN VALIDATION ---
 
     private Role validateTokenAndGetRole(Folder folder, String token) {
-        if (folder.getOwnerToken().equals(token)) return Role.OWNER;
-        if (folder.getShareToken().equals(token)) return Role.VIEWER;
+
+        // Auth-Folder haben ownerToken=null, daher null safe check
+        if (folder.getOwnerToken() != null && folder.getOwnerToken().equals(token)) {
+            return Role.OWNER;
+        }
+
+        if (token.equals(folder.getShareToken())) {
+            return Role.VIEWER;
+        }
+
         throw new InvalidTokenException();
     }
 
     private void requireOwnerToken(Folder folder, String token) {
-        if (!folder.getOwnerToken().equals(token)) {
+        if(folder.getOwnerToken() == null || !folder.getOwnerToken().equals(token)) {
             throw new InvalidTokenException();
         }
     }

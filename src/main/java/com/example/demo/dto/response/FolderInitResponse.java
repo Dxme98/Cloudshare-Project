@@ -13,8 +13,9 @@ public class FolderInitResponse {
     private String folderId;
 
     @Schema(
-            description = "Der Admin-Token für den Ersteller. Ermöglicht Löschen und Verwalten des Ordners.",
-            example = "eyJhbGciOiJIUzI1NiIsIn..."
+            description = "Der Admin-Token für den Ersteller. Ermöglicht Löschen und Verwalten des Ordners. Dieser ist NULL bei angemeldeten Usern! (da die Authentifizierung über den Account läuft).",
+            example = "eyJhbGciOiJIUzI1NiIsIn...",
+            nullable = true
     )
     private String ownerToken;
 
