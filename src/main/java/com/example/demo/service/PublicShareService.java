@@ -5,7 +5,6 @@ import com.example.demo.dto.response.FolderInitResponse;
 import com.example.demo.dto.response.FolderResponse;
 import com.example.demo.entity.FileMetadata;
 import com.example.demo.entity.Folder;
-import com.example.demo.enums.FolderType;
 import com.example.demo.enums.Role;
 import com.example.demo.exceptions.custom.InvalidTokenException;
 import com.example.demo.exceptions.custom.StorageLimitExceededException;
@@ -18,12 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
-
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +33,6 @@ public class PublicShareService {
 
     public FolderInitResponse initializeFolder() {
         Folder folder = Folder.createTemporaryFolder("Temporary Folder");
-
         folderRepository.save(folder);
         return FolderMapper.toInitResponse(folder);
     }
@@ -71,7 +65,8 @@ public class PublicShareService {
         validateTokenAndGetRole(folder, token);
 
         FileMetadata metadata = fileStorage.getMetadata(fileId);
-        if (!metadata.getFolderId().equals(folderId)) {
+
+        if (!Objects.equals(metadata.getFolderId(), folderId)) {
             throw new InvalidTokenException();
         }
 
@@ -83,7 +78,8 @@ public class PublicShareService {
         requireOwnerToken(folder, token);
 
         FileMetadata metadata = fileStorage.getMetadata(fileId);
-        if (!metadata.getFolderId().equals(folderId)) {
+
+        if (!Objects.equals(metadata.getFolderId(), folderId)) {
             throw new InvalidTokenException();
         }
 
@@ -94,13 +90,11 @@ public class PublicShareService {
     // --- TOKEN VALIDATION ---
 
     private Role validateTokenAndGetRole(Folder folder, String token) {
-
-        // Auth-Folder haben ownerToken=null, daher null safe check
-        if (folder.getOwnerToken() != null && folder.getOwnerToken().equals(token)) {
+        if (Objects.equals(folder.getOwnerToken(), token)) {
             return Role.OWNER;
         }
 
-        if (token.equals(folder.getShareToken())) {
+        if (Objects.equals(folder.getShareToken(), token)) {
             return Role.VIEWER;
         }
 
@@ -108,7 +102,7 @@ public class PublicShareService {
     }
 
     private void requireOwnerToken(Folder folder, String token) {
-        if(folder.getOwnerToken() == null || !folder.getOwnerToken().equals(token)) {
+        if (!Objects.equals(folder.getOwnerToken(), token)) {
             throw new InvalidTokenException();
         }
     }

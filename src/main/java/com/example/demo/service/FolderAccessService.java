@@ -1,7 +1,5 @@
 package com.example.demo.service;
 
-
-;
 import com.example.demo.entity.Folder;
 import com.example.demo.entity.FolderShare;
 import com.example.demo.enums.Role;
@@ -11,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +26,7 @@ public class FolderAccessService {
     }
 
     public Role getUserRole(String userId, Folder folder) {
-        if (folder.getUserId().equals(userId)) {
+        if (Objects.equals(folder.getUserId(), userId)) {
             return Role.OWNER;
         }
 
@@ -38,9 +38,6 @@ public class FolderAccessService {
                 });
     }
 
-    /**
-     * Prüft ob User mindestens die angegebene Rolle hat.
-     */
     public void requireRole(String userId, String folderId, Role requiredRole) {
         Role userRole = getUserRole(userId, folderId);
         if (!hasPermission(userRole, requiredRole)) {
@@ -50,16 +47,17 @@ public class FolderAccessService {
 
     public void requireOwner(String userId, String folderId) {
         Folder folder = folderRepository.findById(folderId);
-        if (!folder.getUserId().equals(userId)) {
+
+        if (!Objects.equals(folder.getUserId(), userId)) {
             log.warn("Owner access required: User {} tried to access Folder {}", userId, folderId);
             throw new AccessDeniedException("Nur der Besitzer kann diese Aktion ausführen");
         }
     }
 
     private boolean hasPermission(Role userRole, Role required) {
-        if (required == Role.VIEWER) return true;
-        if (required == Role.CONTRIBUTOR) return userRole != Role.VIEWER;
-        if (required == Role.OWNER) return userRole == Role.OWNER;
+        if (required == Role.VIEWER) return true; // Jeder mit irgendeiner Rolle darf lesen
+        if (required == Role.CONTRIBUTOR) return userRole != Role.VIEWER; // Owner & Contributor dürfen schreiben
+        if (required == Role.OWNER) return userRole == Role.OWNER; // Nur Owner darf Owner-Sachen
         return false;
     }
 }

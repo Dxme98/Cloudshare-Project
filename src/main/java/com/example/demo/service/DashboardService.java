@@ -23,7 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Objects;
 
 
 @Service
@@ -52,7 +52,7 @@ public class DashboardService {
 
     public List<FolderSummaryResponse> getMyFolders(String userId) {
         return folderRepository.findAllByUserId(userId).stream()
-                .map(folder -> FolderMapper.toSummaryDto(folder))
+                .map(FolderMapper::toSummaryDto)
                 .toList();
     }
 
@@ -109,7 +109,7 @@ public class DashboardService {
 
         String targetUserId = userLookup.findUserIdByEmail(request.getTargetEmail());
 
-        if (targetUserId.equals(ownerId)) {
+        if (Objects.equals(targetUserId, ownerId)) {
             throw new IllegalArgumentException("Kann nicht mit sich selbst teilen");
         }
 
@@ -165,7 +165,7 @@ public class DashboardService {
     public void removeCollaborator(String folderId, String ownerId, String targetUserId) {
         accessService.requireOwner(ownerId, folderId);
 
-        if (ownerId.equals(targetUserId)) {
+        if (Objects.equals(ownerId, targetUserId)) {
             throw new IllegalArgumentException("Kann sich nicht selbst entfernen");
         }
 
@@ -186,7 +186,8 @@ public class DashboardService {
 
     private void validateFileInFolder(String fileId, String folderId) {
         FileMetadata metadata = fileStorage.getMetadata(fileId);
-        if (!metadata.getFolderId().equals(folderId)) {
+
+        if (!Objects.equals(metadata.getFolderId(), folderId)) {
             throw new InvalidTokenException();
         }
     }
