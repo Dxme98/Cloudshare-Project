@@ -29,8 +29,6 @@ public class PublicShareService {
     private final FileStorageService fileStorage;
     private final FileMetadataRepository fileMetadataRepository;
 
-    private static final long MAX_TEMP_FOLDER_SIZE = 500 * 1024 * 1024; // 500 MB
-
     public FolderInitResponse initializeFolder() {
         Folder folder = Folder.createTemporaryFolder("Temporary Folder");
         folderRepository.save(folder);
@@ -51,8 +49,8 @@ public class PublicShareService {
 
         // Quota
         long currentSize = fileMetadataRepository.sumFileSizesByFolderId(folderId);
-        if (currentSize + file.getSize() > MAX_TEMP_FOLDER_SIZE) {
-            throw new StorageLimitExceededException(currentSize, MAX_TEMP_FOLDER_SIZE);
+        if (currentSize + file.getSize() > folder.getMaxStorage()) {
+            throw new StorageLimitExceededException(currentSize, folder.getMaxStorage());
         }
 
         FileMetadata metadata = fileStorage.uploadFile(folderId, file);

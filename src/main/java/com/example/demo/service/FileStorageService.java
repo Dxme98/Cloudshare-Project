@@ -38,14 +38,8 @@ public class FileStorageService {
         try (InputStream inputStream = file.getInputStream()) {
             s3Template.upload(bucketName, s3Key, inputStream);
 
-            FileMetadata metadata = FileMetadata.builder()
-                    .fileId(fileId)
-                    .fileName(file.getOriginalFilename())
-                    .s3Key(s3Key)
-                    .fileSize(file.getSize())
-                    .folderId(folderId)
-                    .build();
-            metadata.setUploadDate(); // Annahme: Entity hat diese Methode
+
+            FileMetadata metadata = FileMetadata.createFileMetaData(fileId, file.getOriginalFilename(), s3Key, file.getSize(), folderId);
 
             return fileMetadataRepository.save(metadata);
 

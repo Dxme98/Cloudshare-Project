@@ -6,6 +6,7 @@ import com.example.demo.dto.response.*;
 import com.example.demo.entity.FileMetadata;
 import com.example.demo.entity.Folder;
 import com.example.demo.entity.FolderShare;
+import com.example.demo.enums.FolderType;
 import com.example.demo.enums.Role;
 import com.example.demo.exceptions.custom.InvalidTokenException;
 import com.example.demo.exceptions.custom.StorageLimitExceededException;
@@ -37,8 +38,6 @@ public class DashboardService {
     private final FolderAccessService accessService;
     private final UserLookupService userLookup;
     private final FileMetadataRepository fileMetadataRepository;
-
-    private static final long MAX_FOLDER_SIZE = 1024L * 1024 * 1024; // 1 GB
 
     // --- FOLDER OPERATIONS ---
 
@@ -77,8 +76,8 @@ public class DashboardService {
 
         // Quota Check
         long currentSize = fileMetadataRepository.sumFileSizesByFolderId(folderId);
-        if (currentSize + file.getSize() > MAX_FOLDER_SIZE) {
-            throw new StorageLimitExceededException(currentSize, MAX_FOLDER_SIZE);
+        if (currentSize + file.getSize() > FolderType.PERMANENT.getDefaultStorageLimit()) {
+            throw new StorageLimitExceededException(currentSize, FolderType.PERMANENT.getDefaultStorageLimit());
         }
 
         FileMetadata metadata = fileStorage.uploadFile(folderId, file);
@@ -117,13 +116,7 @@ public class DashboardService {
             throw new UserAlreadyHasAccessException(targetUserId);
         }
 
-        FolderShare share = FolderShare.builder()
-                .userId(targetUserId)
-                .folderId(folderId)
-                .ownerId(ownerId)
-                .folderName(folder.getFolderName())
-                .role(request.getRole())
-                .build();
+        FolderShare share = FolderShare.create(targetUserId, folderId, ownerId, folder.getFolderName(), request.getRole());
 
         shareRepository.save(share);
         log.info("Folder {} shared with {} as {}", folderId, targetUserId, request.getRole());

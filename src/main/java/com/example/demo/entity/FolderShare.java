@@ -48,4 +48,14 @@ public class FolderShare {
     public String getFolderName() {
         return folderName;
     }
+
+    public static FolderShare create(String targetUserId, String folderId, String ownerId, String folderName, Role role) {
+       return FolderShare.builder()
+                .userId(targetUserId)
+                .folderId(folderId)
+                .ownerId(ownerId)
+                .folderName(folderName)
+                .role(role)
+                .build();
+    }
 }

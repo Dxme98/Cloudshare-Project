@@ -33,4 +33,18 @@ public class FileMetadata {
     public void setUploadDate() {
         this.uploadDate = Instant.now().toString();
     }
+
+    public static FileMetadata createFileMetaData(String fileId, String fileName, String s3Key, Long fileSize, String folderId) {
+        FileMetadata metaData =  FileMetadata.builder()
+                .fileId(fileId)
+                .fileName(fileName)
+                .s3Key(s3Key)
+                .fileSize(fileSize)
+                .folderId(folderId)
+                .build();
+
+        metaData.setUploadDate();
+
+        return metaData;
+    }
 }

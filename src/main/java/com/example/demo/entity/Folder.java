@@ -6,6 +6,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -39,39 +40,41 @@ public class Folder {
     @DynamoDbSecondaryPartitionKey(indexNames = "UserIndex")
     public String getUserId() { return userId; }
 
-    public void setFolderId(String folderId) { this.folderId = folderId; }
-
     public static Folder createPermanentFolder(String userId, String folderName) {
         String folderId = UUID.randomUUID().toString();
         String shareToken = UUID.randomUUID().toString();
 
-        return  Folder.builder()
+        return Folder.builder()
                 .folderId(folderId)
                 .folderName(folderName != null ? folderName : "New Folder")
                 .type(FolderType.PERMANENT)
                 .userId(userId)
                 .shareToken(shareToken)
                 .ownerToken(null)
-                .maxStorage(1024L * 1024 * 1024) // 1 GB
+                .maxStorage(FolderType.PERMANENT.getDefaultStorageLimit())
                 .createdAt(Instant.now().toString())
-                .ttl(null) // Nie löschen
+                .ttl(calculateTtl(FolderType.PERMANENT))
+                .usedStorage(0L)
+                .fileCount(0L)
                 .build();
     }
 
-    public static Folder createTemporaryFolder( String folderName) {
+    public static Folder createTemporaryFolder(String folderName) {
         String folderId = UUID.randomUUID().toString();
         String shareToken = UUID.randomUUID().toString();
         String ownerToken = UUID.randomUUID().toString();
 
-        return  Folder.builder()
+        return Folder.builder()
                 .folderId(folderId)
                 .folderName(folderName != null ? folderName : "New Folder")
                 .type(FolderType.TEMPORARY)
                 .shareToken(shareToken)
                 .ownerToken(ownerToken)
-                .maxStorage(500L * 1024 * 1024) // 500 MB
+                .maxStorage(FolderType.TEMPORARY.getDefaultStorageLimit())
                 .createdAt(Instant.now().toString())
-                .ttl(Instant.now().plus(24, ChronoUnit.HOURS).getEpochSecond()) // Nach 24h löschen
+                .ttl(calculateTtl(FolderType.TEMPORARY))
+                .usedStorage(0L)
+                .fileCount(0L)
                 .build();
     }
 
@@ -81,5 +84,12 @@ public class Folder {
         return this.shareToken;
     }
 
+    private static Long calculateTtl(FolderType type) {
+        Duration duration = type.getDefaultTtlDuration();
+        if (duration == null) {
+            return null; // Permanent
+        }
+        return Instant.now().plus(duration).getEpochSecond();
+    }
 
 }
