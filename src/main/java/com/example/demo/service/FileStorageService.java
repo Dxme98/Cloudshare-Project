@@ -33,19 +33,36 @@ public class FileStorageService {
      */
     public FileMetadata uploadFile(String folderId, MultipartFile file) {
         String fileId = UUID.randomUUID().toString();
+        // S3 Key bauen
         String s3Key = buildS3Key(folderId, fileId, file.getOriginalFilename());
 
+        // Upload zu S3
         try (InputStream inputStream = file.getInputStream()) {
             s3Template.upload(bucketName, s3Key, inputStream);
-
-
-            FileMetadata metadata = FileMetadata.createFileMetaData(fileId, file.getOriginalFilename(), s3Key, file.getSize(), folderId);
-
-            return fileMetadataRepository.save(metadata);
-
         } catch (IOException e) {
-            log.error("S3 upload failed for file: {}", file.getOriginalFilename(), e);
-            throw new FileUploadException("Upload fehlgeschlagen");
+            log.error("S3 upload failed", e);
+            throw new FileUploadException("Upload zu S3 fehlgeschlagen");
+        }
+
+        // SCHRITT 2: Metadaten speichern
+        FileMetadata metadata = FileMetadata.createFileMetaData(fileId, file.getOriginalFilename(), s3Key, file.getSize(), folderId);
+
+        try {
+            return fileMetadataRepository.save(metadata);
+        } catch (Exception e) {
+            // FEHLERFALL IN DB!
+            log.error("DB save failed for file {}. Rolling back S3 upload.", fileId, e);
+
+            // COMPENSATING TRANSACTION: Datei wieder aus S3 löschen!
+            try {
+                s3Template.deleteObject(bucketName, s3Key);
+                log.info("Rollback successful: Deleted orphaned file {} from S3", s3Key);
+            } catch (Exception s3Ex) {
+                // Worst Case: DB tot UND S3 Löschung geht nicht.
+                log.error("CRITICAL: Rollback failed! Orphaned file in S3: {}", s3Key, s3Ex);
+            }
+
+            throw new FileUploadException("Upload fehlgeschlagen (Datenbankfehler)");
         }
     }
 
