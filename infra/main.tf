@@ -34,7 +34,7 @@ resource "aws_dynamodb_table" "file_metadata" {
   }
 
   global_secondary_index {
-    name               = "FolderIndex" # Name, den wir im Java-Code nutzen
+    name               = "FolderIndex"
     hash_key           = "folderId"
     projection_type    = "ALL" # Kopiert alle Attribute in den Index für schnellen Zugriff
   }
@@ -48,11 +48,10 @@ resource "aws_dynamodb_table" "folder_shares" {
   name           = "FolderShare"
   billing_mode   = "PAY_PER_REQUEST"
 
-  # --- Haupt-Index (Base Table) ---
   hash_key       = "userId"
   range_key      = "folderId"
 
-  # Definition der Attribute (nur Keys müssen definiert werden)
+
   attribute {
     name = "userId"
     type = "S"
@@ -63,7 +62,6 @@ resource "aws_dynamodb_table" "folder_shares" {
     type = "S"
   }
 
-  # --- Global Secondary Index (GSI) ---
   global_secondary_index {
     name               = "gsi_folder_lookup"
     hash_key           = "folderId"
@@ -103,9 +101,9 @@ resource "aws_dynamodb_table" "folder" {
 
 
   global_secondary_index {
-    name               = "UserIndex" # Name, den wir im Java-Code nutzen
+    name               = "UserIndex"
     hash_key           = "userId"
-    projection_type    = "ALL" # Kopiert alle Attribute in den Index für schnellen Zugriff
+    projection_type    = "ALL"
   }
 
   tags = {
@@ -136,13 +134,11 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        # Erlaubt das Löschen der physischen Dateien in S3
         Effect   = "Allow"
         Action   = ["s3:DeleteObject"]
         Resource = ["${aws_s3_bucket.uploads.arn}/uploads/*" ]
       },
       {
-        # Erlaubt das Finden und Löschen der Metadaten
         Effect   = "Allow"
         Action   = [
           "dynamodb:Query",
@@ -157,7 +153,6 @@ resource "aws_iam_policy" "lambda_cleanup_policy" {
         ]
       },
       {
-        # Erlaubt der Lambda, den Stream der Folder-Tabelle zu lesen
         Effect   = "Allow"
         Action   = [
           "dynamodb:GetRecords",
@@ -183,19 +178,14 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  # Pfad zu deinem Python-Skript (relativ zu main.tf)
   source_file = "${path.module}/../lambdas/cleanup/cleanup_lambda.py"
-  # Wo das fertige ZIP gespeichert werden soll
   output_path = "${path.module}/cleanup_lambda.zip"
 }
 
 # Die Lambda Funktion selbst
 resource "aws_lambda_function" "cleanup_lambda" {
-  # Wir nutzen hier den Pfad aus dem Block oben!
   filename         = data.archive_file.lambda_zip.output_path
 
-  # Das hier ist ein Profi-Trick: Er sorgt dafür, dass die Lambda neu hochgeladen wird,
-  # wenn du den Python-Code änderst (ähnlich wie ein neuer Image-Tag bei ECS)
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   function_name    = "CloudShare_Cleanup_Service"
@@ -212,7 +202,6 @@ resource "aws_lambda_function" "cleanup_lambda" {
   }
 }
 
-# Verbindet DynamoDB Stream mit Lambda
 resource "aws_lambda_event_source_mapping" "trigger" {
   event_source_arn  = aws_dynamodb_table.folder.stream_arn
   function_name     = aws_lambda_function.cleanup_lambda.arn

@@ -156,7 +156,7 @@ public abstract class AbstractIntegrationTest {
             ddb.createTable(requestBuilder.build());
             System.out.println("Tabelle erstellt: " + tableName);
 
-        } catch (ResourceInUseException e) {
+        } catch (ResourceInUseException ignored) {
         }
     }
 

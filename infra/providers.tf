@@ -7,15 +7,14 @@ terraform {
   }
 
   backend "s3" {
-    bucket         = "tf-state-cloudshare-project-5598" # Dein Bucket aus Schritt 0
-    key            = "dev/terraform.tfstate"            # Der Pfad INNERHALB des Buckets (wie ein Ordner)
+    bucket         = "tf-state-cloudshare-project-5598"
+    key            = "dev/terraform.tfstate"
     region         = "eu-central-1"
-    dynamodb_table = "state-lock" # Deine Tabelle für das Locking
-    encrypt        = true         # Der State wird verschlüsselt abgelegt
+    dynamodb_table = "state-lock"
+    encrypt        = true
   }
 }
 
-# 3. Der Provider selbst
 provider "aws" {
   region = "eu-central-1"
 }

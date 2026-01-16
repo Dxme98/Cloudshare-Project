@@ -10,7 +10,7 @@ resource "aws_lb" "main" {
   access_logs {
     bucket  = aws_s3_bucket.alb_logs.id
     enabled = true
-    prefix  = "alb" # Optional: Logs landen unter s3://bucket/alb/...
+    prefix  = "alb"
   }
 
   depends_on = [aws_s3_bucket_policy.allow_alb_logging]
@@ -65,11 +65,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs_lifecycle" {
 }
 
 
-# Holt deine Account ID für den Bucket-Namen
+
 data "aws_caller_identity" "current" {}
 
-# Holt die offizielle AWS Log-Delivery Account ID für eu-central-1
-# Jede Region hat hier eine feste ID (für Frankfurt: 054676820928)
 resource "aws_s3_bucket_policy" "allow_alb_logging" {
   bucket = aws_s3_bucket.alb_logs.id
 

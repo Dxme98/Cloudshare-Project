@@ -66,17 +66,15 @@ public class FolderRepository {
      * Verringert Zähler und Speicherplatz atomar.
      */
     public void decrementFolderStats(String folderId, long fileSize) {
-        updateFolderStats(folderId, -1, -fileSize); // Negative Werte übergeben
+        updateFolderStats(folderId, -1, -fileSize);
     }
 
     private void updateFolderStats(String folderId, int countDelta, long sizeDelta) {
-        // Die Update Expression sorgt dafür, dass wir live rechnen
-        // if_not_exists ist wichtig, falls die Felder noch null sind (bei alten Ordnern)
         String updateExpression = "SET fileCount = if_not_exists(fileCount, :start) + :inc, " +
                 "usedStorage = if_not_exists(usedStorage, :start) + :size";
 
         UpdateItemRequest request = UpdateItemRequest.builder()
-                .tableName("Folder") // Name muss exakt mit deiner DynamoDB Tabelle übereinstimmen
+                .tableName("Folder")
                 .key(Map.of("folderId", AttributeValue.builder().s(folderId).build()))
                 .updateExpression(updateExpression)
                 .expressionAttributeValues(Map.of(

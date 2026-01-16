@@ -22,7 +22,7 @@ resource "aws_ecr_lifecycle_policy" "cleanup_policy" {
         rulePriority = 1
         description  = "Behalte nur die 3 neuesten Images"
         selection = {
-          tagStatus   = "any" # Gilt für alle Images (getaggt & ungetaggt)
+          tagStatus   = "any"
           countType   = "imageCountMoreThan"
           countNumber = 3
         }

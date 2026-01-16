@@ -23,7 +23,6 @@ resource "aws_glue_catalog_table" "alb_logs_table" {
   }
 
   storage_descriptor {
-    # HINWEIS: Wir zeigen auf den eu-central-1 Ordner, damit Athena alle Unterordner findet
     location      = "s3://${aws_s3_bucket.alb_logs.bucket}/alb/AWSLogs/${data.aws_caller_identity.current.account_id}/elasticloadbalancing/eu-central-1/"
     input_format  = "org.apache.hadoop.mapred.TextInputFormat"
     output_format = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat"
@@ -32,7 +31,7 @@ resource "aws_glue_catalog_table" "alb_logs_table" {
       name                  = "alb_logs_serde"
       serialization_library = "org.apache.hadoop.hive.serde2.RegexSerDe"
       parameters = {
-        # Der offizielle AWS Regex für 34 Spalten inkl. Zukunfts-Absicherung am Ende
+        # Der offizielle AWS Regex für 34 Spalten
         "input.regex" = "([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*):([0-9]*) ([^ ]*)[:-]([0-9]*) ([-.0-9]*) ([-.0-9]*) ([-.0-9]*) (|[-0-9]*) (-|[-0-9]*) ([-0-9]*) ([-0-9]*) \"([^ ]*) (.*) (- |[^ ]*)\" \"([^\"]*)\" ([A-Z0-9-_]+) ([A-Za-z0-9.-]*) ([^ ]*) \"([^\"]*)\" \"([^\"]*)\" \"([^\"]*)\" ([-.0-9]*) ([^ ]*) \"([^\"]*)\" \"([^\"]*)\" \"([^ ]*)\" \"([^\\\\s]+?)\" \"([^\\\\s]+)\" \"([^ ]*)\" \"([^ ]*)\" ?([^ ]*)? ?( .*)?"
       }
     }
