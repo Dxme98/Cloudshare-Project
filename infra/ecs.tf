@@ -175,6 +175,14 @@ resource "aws_ecs_task_definition" "cloudshare_task" {
         {
           name  = "AWS_COGNITO_CLIENT_ID"
           value = aws_cognito_user_pool_client.client.id
+        },
+        {
+          name  = "FRONTEND_URL"
+          value = "https://${aws_cloudfront_distribution.frontend_distribution.domain_name}"
+        },
+        {
+          name  = "ALLOWED_ORIGINS"
+          value = "http://localhost:5173,https://${aws_cloudfront_distribution.frontend_distribution.domain_name}"
         }
       ]
     }
