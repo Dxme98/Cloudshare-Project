@@ -75,19 +75,15 @@ public class SecurityConfig {
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 1. Wir starten IMMER mit Localhost
         List<String> allAllowedOrigins = new java.util.ArrayList<>();
         allAllowedOrigins.add("http://localhost:5173");
 
-        // 2. Wir fügen die Cloud-URLs hinzu, falls welche in der ENV stehen
         if (cloudOrigins != null && !cloudOrigins.isEmpty()) {
             allAllowedOrigins.addAll(cloudOrigins);
         }
 
-        // 3. Setze die kombinierte Liste
         configuration.setAllowedOrigins(allAllowedOrigins);
 
-        // Standard-Einstellungen für APIs
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

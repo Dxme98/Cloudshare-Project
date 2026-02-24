@@ -51,8 +51,11 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     }
   }
 
+  aliases = ["cloudshare-app.de"]
   viewer_certificate {
-    cloudfront_default_certificate = true
+    acm_certificate_arn      = aws_acm_certificate_validation.frontend_cert.certificate_arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
   }
 
   tags = {
@@ -84,5 +87,5 @@ resource "aws_s3_bucket_policy" "frontend_policy" {
 }
 
 output "frontend_url" {
-  value = "https://${aws_cloudfront_distribution.frontend_distribution.domain_name}"
+  value = "https://cloudshare-app.de"
 }

@@ -182,7 +182,7 @@ resource "aws_ecs_task_definition" "cloudshare_task" {
         },
         {
           name  = "ALLOWED_ORIGINS"
-          value = "http://localhost:5173,https://${aws_cloudfront_distribution.frontend_distribution.domain_name}"
+          value = "http://localhost:5173,https://cloudshare-app.de"
         }
       ]
     }
@@ -215,10 +215,7 @@ resource "aws_ecs_service" "cloudshare_service" {
 
 
 
-  # Der Lebensretter für Java-Apps:
-  # "Wenn ein neuer Task startet, erlaube ihm 120 Sekunden Zeit zum Booten.
-  # Erst danach darf der ALB ihn als 'Unhealthy' markieren."
   health_check_grace_period_seconds = 120
   force_delete                      = true // development
-  depends_on                        = [aws_lb_listener.http, aws_iam_role_policy_attachment.execution_role_attachment]
+  depends_on                        = [aws_lb_listener.http_redirect, aws_lb_listener.https, aws_iam_role_policy_attachment.execution_role_attachment]
 }

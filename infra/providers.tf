@@ -18,3 +18,9 @@ terraform {
 provider "aws" {
   region = "eu-central-1"
 }
+
+// Für das CloudFront-Zertifikat (USA)
+provider "aws" {
+  alias  = "virginia"
+  region = "us-east-1"
+}
