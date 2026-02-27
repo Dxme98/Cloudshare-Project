@@ -178,7 +178,7 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/../lambdas/cleanup/cleanup_lambda.py"
+  source_file = "${path.module}/../../lambdas/cleanup/cleanup_lambda.py"
   output_path = "${path.module}/cleanup_lambda.zip"
 }
 

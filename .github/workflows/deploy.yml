@@ -7,7 +7,7 @@ on:
 env:
   AWS_REGION: eu-central-1
   ECR_REPOSITORY: cloudshare-repository
-  TF_WORKING_DIR: ./infra
+  TF_WORKING_DIR: ./infra/demo-cheap
 
 permissions:
   id-token: write
