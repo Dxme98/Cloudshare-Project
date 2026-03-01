@@ -9,7 +9,7 @@ Ein Spring Boot Backend das auf AWS ECS Fargate läuft, Dateien in S3 speichert,
 ## Demo & Dokumentation
 
  **[Video-Erklärung](#)** – Vollständige Walkthrough des Projekts  
- **[GitHub Wiki](#)** – Detaillierte Design-Entscheidungen & Diagramme
+ **[GitHub Wiki](https://github.com/Dxme98/Cloudshare-Project/wiki)** – Detaillierte Design-Entscheidungen & Diagramme
 
 ---
 
@@ -94,4 +94,4 @@ Testabdeckung > 80% auf drei Ebenen:
 
 ## Weitere Dokumentation
 
-Ausführliche Diagramme, Architekturentscheidungen und Infrastruktur-Details sind im **[GitHub Wiki](#)** dokumentiert.
+Ausführliche Diagramme, Architekturentscheidungen und Infrastruktur-Details sind im **[GitHub Wiki](https://github.com/Dxme98/Cloudshare-Project/wiki)** dokumentiert.
