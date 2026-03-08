@@ -183,6 +183,10 @@ resource "aws_ecs_task_definition" "cloudshare_task" {
         {
           name  = "ALLOWED_ORIGINS"
           value = "http://localhost:5173,https://cloudshare-app.de"
+        },
+        {
+          name  = "SERVER_FORWARD_HEADERS_STRATEGY"
+          value = "framework"
         }
       ]
     }
